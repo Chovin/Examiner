@@ -1,0 +1,32 @@
+<html>
+  <head>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div id="vm">
+      <h1>[[greeting]]</h1>
+      <v-text-input v-model="greeting" value="Greeting">blah</v-text-input>
+      <p>This is from Flask: <b>{{ user.name }}</b></p>
+    </div>
+    <script>
+    const { createApp } = Vue
+    const { createVuetify } = Vuetify
+    
+    const vuetify = createVuetify({ iconfont: "fa" })
+    
+    const app = createApp({
+      data() {
+        return {
+          greeting: "hi there!"
+        }
+      },
+      delimiters: ['[[',']]']
+    })
+    app.use(vuetify).mount('#vm')
+    </script>
+  </body>
+</html>

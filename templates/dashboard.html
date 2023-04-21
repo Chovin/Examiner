@@ -1,0 +1,43 @@
+<html>
+  <body>
+    <div><h2>Exams you author</h2></div>
+    <table>
+      <tr>
+        <td>ID</td>
+        <td>Name</td>
+        <td>Time</td>
+        <td>Open</td>
+      </tr>
+      {% for e, exam in exams.items() %}
+        <tr id="exam-{{ e }}">
+          <td class="id"> {{ e }} </td>
+          <td class="name">{{ exam.name }}</td>
+          <td class="time_alotted">{{ exam.time_alotted }}</td>
+          <td class="is_open">{{ exam.is_open }}</td>
+          <td><a href="/new_exam?eid={{ e }}" >edit</a></td>
+          <td><button onclick="delete_exam('{{ e }}', '{{ e.name }}')" >delete</button></td>
+      {% endfor %}
+    </table>
+    <a class="button" href="/new_exam">Create Exam</a>
+    <a href="/student_watchtower">Student Watchtower</a>
+    <script>
+      
+      async function delete_exam(e, name) {
+        if (!window.confirm("Are you sure you want to delete exam " + e + " " + name +"?")) {
+          return
+        }
+        
+        const response = await fetch('/exam/' + e, {
+          method: 'DELETE',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        })
+        const content = await response.json();
+        // if success
+        document.getElementById('exam-' + e).remove()
+      }
+    </script>
+  </body>
+</html>

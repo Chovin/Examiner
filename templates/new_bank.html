@@ -1,0 +1,332 @@
+<html>
+  <head>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+<!--     <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet"> -->
+    
+<!--     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/fontawesome.min.css" integrity="sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7" crossorigin="anonymous">   -->
+
+    <style>
+      .inline-radio {
+        flex: 0 0 auto;
+      }
+      .q-card {
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="vm">
+      <h1>Question Bank</h1>
+      <v-form>
+        <v-text-field v-model="name" label="Name"></v-text-field>
+        <div id="bankContainer"></div>
+        <v-btn @click="save" :disabled="name.trim()===''">Save</v-btn>
+        <v-btn @click="back">Back</v-btn>
+      </v-form>
+      <v-container>
+        <v-row v-for="(q, i) in qs">
+        <v-card class="q-card">
+          <v-card-text class="q-card">
+            <v-container>
+              <v-row>
+                [[i]] [[q.text]]
+                <v-col class="text-right">
+                <v-btn @click="duplicate_q(i)">Duplicate</v-btn>
+                <v-btn @click="open_edit_q(i)">Edit</v-btn>
+                <v-btn @click="delete_q_prompt(i)">Delete</v-btn>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+        </v-card>
+        </v-row>
+      </v-container>
+      <v-dialog
+        v-model="add_q_toggle"
+        persistent
+        width="1024"
+      >
+        <template v-slot:activator="{ props }">
+          <v-btn :disabled="name.trim()===''" v-bind="props" @click="open_new_question_menu">Add Question</v-btn>
+        </template>
+        <v-card>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col cols="12">
+                  <v-select
+                    v-model="q_type"
+                    :items="q_types"
+                    label="Type"
+                  ></v-select>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col cols="12">
+                  <v-textarea v-model="q_text" label="Question" required></v-textarea>
+                </v-col>
+              </v-row>
+              <div v-if="q_type!=='Essay'" >
+                <v-radio-group v-if="q_type=='Single Answer'" v-model="answer_choice">
+                  <v-row v-for="choice in choices">
+    <!--                 <v-col cols="12"> -->
+                      <v-radio v-else :value="choice.id" class="pe-2 inline-radio" v-model="answer_choice"></v-radio>
+                      <v-text-field
+                        v-model="choice.text" hide-details
+                      ></v-text-field>
+                      <v-btn @click="remove_choice(choice.id)">x</v-btn>
+    <!--                 </v-col> -->
+                    <v-btn @click="add_choice">+</v-btn>
+                  </v-row>
+                </v-radio-group>
+                <div v-else>
+                  <v-row v-for="choice in choices">
+    <!--                 <v-col cols="12"> -->
+                      <v-checkbox-btn v-if="q_type=='Multiple Answer'" v-model="choice.is_answer" class="pe-2"></v-checkbox-btn>
+                      <v-text-field
+                        v-model="choice.text" hide-details
+                      ></v-text-field>
+                      <v-btn @click="remove_choice(choice.id)">x</v-btn>
+    <!--                 </v-col> -->
+                    <v-btn @click="add_choice">+</v-btn>
+                  </v-row>
+                </div>
+              </div>
+              <v-row>
+                <v-col class="text-right">
+                  <v-btn @click="add_q_toggle=false">Cancel</v-btn>
+                  <v-btn @click="save_question">Save</v-btn>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+      <v-btn @click="back">Back</v-btn>
+    </div>
+  <script>
+    const { createApp } = Vue
+    const { createVuetify } = Vuetify
+    // import { aliases, mdi } from 'vuetify/iconsets/mdi'
+    
+    const vuetify = createVuetify({ iconfont: "fa" })
+    
+    const app = createApp({
+      data() {
+        return {
+          name: '',
+          qbid: '{{bank.id}}',
+          add_q_toggle: false,
+          editing: false,
+          questions: {},
+          answer_choice: 0,
+          q_id: 0,
+          q_text: "",
+          q_type: "Single Answer",
+          q_types: [
+            "Single Answer",
+            "Multiple Answer",
+            "Essay"
+          ],
+          // multiple_answer
+          // essay
+          choices: [{id: 0, text: '', is_answer: true}, {id: 1, text: '', is_answer: false}]
+        }
+      },
+      computed: {
+        qs() {
+          t = []
+          for (let k in this.questions) {
+            if (k === 'next_id') {
+              continue
+            }
+            t.push(this.questions[k])
+          }
+          return t
+        }
+      },
+      methods: {
+        async save() {
+          method = 'POST'
+          url = '/bank'
+          if (this.qbid !== '') {
+            method = 'PUT'
+            url += '/' + this.qbid
+          }
+          response = await fetch(url, {
+            method: method,
+            headers: {
+              'Accepts': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name: this.name,
+              questions: this.questions
+            })
+          })
+          result = await response.json()
+          this.qbid = result.id
+        },
+        add_choice() {
+          // this.$vuetify.icons.checked = 'fas fa-check-square'
+          // this.$vuetify.icons.unchecked = 'far fa-square'    
+          this.choices.push({id: this.choices.length, text: '', is_answer: false})
+        },
+        remove_choice(id) {
+          c = null
+          for (let choice of this.choices) {
+            if (choice.id == id) {
+              c = choice
+              break
+            }
+          }
+          i = this.choices.indexOf(c)
+          if (this.choices.length !== 1) {
+            this.choices.splice(i, 1)
+          } else {
+            this.choices[0].text = ''
+            return
+          }
+          i = 0
+          for (let choice of this.choices) {
+            choice.id = i
+            i += 1
+          }
+        },
+        async save_question() {
+          if (this.qbid === '') {
+            return alert('must save the question bank first')
+          }
+          url = '/bank/' + this.qbid
+          method = 'POST'
+          if (this.editing) {
+            url += '/' + this.q_id
+            method = 'PUT'
+          }
+          choices = this.choices
+          if (this.q_type === 'Essay') {
+            choices = []
+          } else if (this.q_type === 'Single Answer') {
+            answer = this.answer_choice
+            for (let choice of choices) {
+              if (answer == choice.id) {
+                choice.is_answer = true
+              } else {
+                choice.is_answer = false
+              }
+            }
+          }
+          response = await fetch(url, {
+            method: method,
+            headers: {
+              'Accepts': 'application/json',
+              'Content-Type': 'application/json'
+            },              
+            body: JSON.stringify({
+              text: this.q_text,
+              type: this.q_type,
+              choices: choices
+            })
+          })
+          q = await response.json()
+          this.questions[q.id] = q
+          this.q_id = null
+          this.q_text = ''
+          this.q_type = "Single Answer"
+          this.choices = [{id: 0, text: '', is_answer: true}, {id: 1, text: '', is_answer: true}]
+          this.answer_choice = 0
+          this.add_q_toggle = false
+        },
+        
+        async open_new_question_menu() {
+          this.editing = false
+          this.q_id = null
+          this.q_text = ''
+          this.q_type = "Single Answer"
+          this.choices = [{id: 0, text: '', is_answer: true}, {id: 1, text: '', is_answer: true}]
+          this.answer_choice = 0
+          if (this.qbid !== '') {
+            return
+          }
+          
+          response = await fetch('/bank', {
+            method: 'POST',
+            headers: {
+              'Accepts': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name: this.name
+            })
+          })
+          result = await response.json()
+          this.qbid = result.id
+        },
+        async load_bank(qbid) {
+          response = await fetch('/bank/' + qbid, {
+            method: 'GET',
+            headers: {
+              'Accepts': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          })
+          bank = await response.json()
+          this.name = bank.name
+          this.questions = bank.questions
+        },
+        async duplicate_q(index) {
+          await this.open_edit_q(index)
+          this.editing = false
+          this.q_id = null
+          this.choices = JSON.parse(JSON.stringify(this.choices))
+        },
+        async open_edit_q(index) {
+          q = this.qs[index]
+          this.editing = true
+          this.q_text = q.text
+          this.q_id = q.id
+          this.q_type = q.type
+          this.choices = q.choices
+          for (let c of q.choices) {
+            if (c.is_answer) {
+              this.answer_choice = c.id
+            }
+          }
+          this.add_q_toggle = true
+        },
+        async delete_q_prompt(index) {
+          if (!window.confirm("delete question " + index + "?")) {
+            return
+          }
+          id = this.qs[index].id
+          const response = await fetch('/bank/' + this.qbid + '/' + id, {
+            method: 'DELETE',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          })
+          const content = await response.json();
+          delete this.questions[id]
+        },
+        back() {
+          history.back()
+        }
+      },
+      async beforeMount() {
+        const searchParams = new URLSearchParams(window.location.search)
+        if (searchParams.has('qb_id')) {
+          id = searchParams.get('qb_id')
+          await this.load_bank(id)
+        }
+      },
+      delimiters: ['[[',']]']
+    })
+    app.use(vuetify).mount('#vm')
+  </script>
+  </body>
+</html>

@@ -1,0 +1,269 @@
+<html>
+  <head>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <style>
+    .table_row td:first-child {
+      padding-right: 1em;
+      text-align: right;
+    }
+  </style>
+  </head>
+  <body>
+    <div id="vm">
+      <h1>Exam</h1>
+      <v-container>
+        <v-text-field label="Exam name" v-model="name"></v-text-field>
+        <v-text-field label="Time (minutes. 0 for untimed)" v-model="time" type="number" min="0"></v-text-field>
+        <v-row>
+        <v-checkbox label="Students can take now" v-model="is_open"></v-checkbox>
+        <v-btn @click="submit">Submit</v-btn>
+        <v-btn @click="go_dashboard">Back</v-btn>
+        </v-row>
+        <div id="bankContainer"></div>
+        <v-row>
+        </v-row>
+        <v-row>
+          <v-select 
+            v-model="bank"
+            :items="banks"
+            item-title="display"
+            label="Choose question bank"
+          ></v-select>
+          <v-btn @click="edit_or_create"><span v-if="bank==''">Create</span><span v-else>Edit</span> Bank</v-btn><v-btn @click="delete_bank">Delete Bank</v-btn>
+        </v-row>
+        <v-row>
+          <v-text-field v-model="amt" label="Amount" type="number"></v-text-field>
+          <v-text-field v-model="points" label="Points" type="number"></v-text-field>
+        </v-row>
+        <v-row><v-btn @click="addBank">Add question bank</v-btn></v-row>
+        <v-row>
+          <table>
+            <tr>
+              <th>Bank</th>
+              <th>Amt</th>
+              <th>Points</th>
+              <th></th>
+            </tr>
+            <tr class="table_row" v-for="s in struct_table" :key="s.bid">
+              <td>
+                [[s.bid]] [[ s.name ]]
+              </td>
+              <td>
+                <v-responsive
+                  class="mx-auto"
+                  max-width="100"
+                >
+                  <v-text-field v-model="s.amt" label="Amount" type="number" hide-details></v-text-field>
+                </v-responsive>
+              </td>
+              <td>
+                <v-responsive
+                  class="mx-auto"
+                  max-width="100"
+                >
+                  <v-text-field v-model="s.points" label="Points" type="number" hide-details></v-text-field>
+                </v-responsive>
+              </td>
+              
+              <td><v-btn @click="remove_bank(s.bid)">Delete</v-btn></td>
+            </tr>
+            <tr class="last_row">
+              <td></td>
+              <td>[[total_amt]]</td>
+              <td>[[total_points]]</td>
+            </tr>
+          </table>
+        </v-row>
+        <v-form id="questionBankForm">
+        </v-form>
+      </v-container>
+    </div>
+    <script>
+      
+      const searchParams = new URLSearchParams(window.location.search)
+      is_new = true
+      if (searchParams.has('eid')) {
+        is_new = false
+        id = searchParams.get('eid')
+        $('[name=name]').attr("placeholder", '{{ exam.name }}')
+        $('[name=time]').attr("placeholder", '{{ exam.time_alotted }}')
+        $('[name=name]').val('{{ exam.name }}')
+        $('[name=time]').val({{ exam.time_alotted }})
+        $('[name=is_open]').prop('checked', {{ 'true' if exam.is_open else 'false' }});
+      }
+
+      const { createApp } = Vue
+      const { createVuetify } = Vuetify
+
+      const vuetify = createVuetify({ iconfont: "fa" })
+    
+      const app = createApp({
+        data() {
+          return {
+            name: '{{exam.name}}',
+            time: '{{exam.time_alotted or 75}}',
+            is_open: false,
+            amt: "1",
+            points: "1",
+            bankN: 0,
+            bank: '',
+            banks: [{value: "", display: "Create new bank"},
+              {%- for bid, bank in banks.items() %}
+                    {value: "{{bid}}", name: "{{bank.name}}", display: "{{bid}} {{ bank.name }} ({{ bank.questions.keys()|length-1 }}qs)"},{% endfor -%}],
+            structure: [
+              {%- for bid, v in structure.items() %}
+              {bid: {{bid}}, amt: {{v.amt or 0}}, points: {{v.points or 0}} },
+              {% endfor -%}
+            ]
+          }
+        },
+        computed: {
+          banks_map() {
+            let bm = {}
+            for (let b of this.banks) {
+              bm[b.value] = {bid: b.value, name: b.name}
+            }
+            return bm
+          },
+          struct_map() {
+            let banks = {}
+            for (let b of this.structure) {
+              banks[b.bid] = {amt: b.amt, points: b.points}
+            }
+            return banks
+          },
+          struct_table() {
+            let l = []
+            for (let b of this.structure) {
+              l.push({bid: b.bid, name: this.banks_map[b.bid].name, amt: b.amt, points: b.points})
+            }
+            return l
+          },
+          total_amt() {
+            sm = 0
+            for (let bank of this.structure) {
+              sm += parseInt(bank.amt)
+            }
+            return sm
+          },
+          total_points() {
+            sm = 0
+            for (let bank of this.structure) {
+              sm += parseInt(bank.amt) * parseInt(bank.points)
+            }
+            return sm
+          }
+        },
+        methods: {
+          async addBank() {
+            if (this.bank == '') {
+              return false
+            }
+            for (let b of this.structure) {
+              if (this.bank == b.bid) {
+                alert('That bank is already in the exam.')
+                return false
+              }
+            }
+            this.structure.push({
+              bid: this.bank,
+              amt: this.amt,
+              points: this.points
+            })
+            if (!is_new) {await this.submit(false)}
+          },
+          async remove_bank(bid) {
+            let i=0;
+            for (let b of this.structure) {
+              if (b.bid == bid) {break}
+              i += 1
+            }
+            this.structure.splice(i,1)
+            if (!is_new) {await this.submit(false)}
+          },
+          async delete_bank() {
+            if (this.bank == '') {
+              return false
+            }
+            if (!window.confirm('are you sure? this will affect all exams that have this bank and leave them broken until those banks are manually removed from them.')) {
+              return false
+            }
+            bid = this.bank
+            url = '/bank/' + bid
+            response = await fetch(url, {
+              method: 'DELETE',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              }
+            })
+            content = await response.json();
+            let bi = 0;
+            for (let b of this.banks) {
+              if (b.value == bid) {
+                break
+              }
+              bi += 1
+            }
+            this.banks.splice(bi, 1)
+            try {
+              this.bank = this.banks[bi].value
+            } catch (error) {
+              this.bank = this.banks[bi-1].value
+            }
+            await this.remove_bank(bid)
+          },
+          async submit(redirect=true) {
+            out = {}
+            out['name'] = this.name
+            // parseInt is not a function here. why?
+            out['time'] = parseInt(this.time)
+            out['is_open'] = this.is_open
+    
+            // TODO: replace this later
+            out['structure'] = this.struct_map
+    
+            // event.preventDefault();
+            method = 'POST'
+            url = '/exam'
+            if (!is_new) {
+              method = 'PUT'
+              url += '/' + id 
+            }
+            
+            rawResponse = await fetch(url, {
+              method: method,
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(out)
+            })
+            content = await rawResponse.json();
+            if (redirect) {
+              window.location.replace('/dashboard') 
+            }
+            
+          },
+          go_dashboard() {
+            window.location.replace('/dashboard')
+          },
+          edit_or_create() {
+            url = '/new_bank'
+            console.log(this.bank)
+            if (this.bank !== '') {
+              url += '?qb_id=' + this.bank
+            }
+            window.location.href=url
+          }
+        },
+        delimiters: ['[[',']]']
+      })
+      app.use(vuetify).mount('#vm')
+    </script>
+  </body>
+</html>
