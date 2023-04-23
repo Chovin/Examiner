@@ -140,7 +140,7 @@ def _login_callback():
   
   # TODO: remove this and add a different/better system later
   all_exams = Exam.all(as_dicts=True)
-  exams = {k: {'can_take': True} for k in all_exams}
+  exams = {k: {'can_take': True, 'current_take': 1} for k in all_exams}
   
 
   # Doesn't exist? Add it to the database.
