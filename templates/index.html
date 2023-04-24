@@ -3,21 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <title>FlaskApp</title>
+    {% include "_includes.html" %}
 </head>
 <body>
-    <p>Hello, <b>{{ user.name }}</b>! You're logged in! Email: <b>{{ user.email }}</b></p>
-    <div><p>Google Profile Picture:</p>
-    <img src="{{ user.profile_pic }}" alt="Google profile pic"></img></div>
-    {% if user.is_teacher %}
-      <div><b>Teacher</b></div>
-    {% endif %}  
-    {% if user.is_admin %}
-      <div><b>Admin</b></div>
-    {% endif %}  
-    <a class="button" href="/logout">Logout</a>
-    {% if user.is_teacher %}
-    <div><a class="button" href="/dashboard">dashboard</a></div>
-    {% endif %}  
-    <div><a href="/assigned">assigned exams</a></div>
+  <div id="vm">
+    <v-app>
+    <header>{% include "_navigation.html" %}</header>
+    <v-main>
+      <v-btn href="/assigned">assigned exams</v-btn>
+    </v-main>
+    </v-app>
+  </div>
+  <script>
+    const { createApp } = Vue
+    const { createVuetify } = Vuetify
+    
+    const vuetify = createVuetify({ iconfont: "fa" })
+    const app = createApp({
+      data() {
+        return {}
+      },
+      delimiters: ['[[',']]']
+    })
+    app.use(vuetify).mount('#vm')
+  </script>
 </body>
 </html>

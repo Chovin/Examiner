@@ -35,7 +35,7 @@ class Take():
     if not as_dicts:
       return lst
 
-  return {k: v.to_dict() for k, v in lst.items()}
+    return {k: v.to_dict() for k, v in lst.items()}
 
   @staticmethod
   def get(take_id):
@@ -50,7 +50,7 @@ class Take():
                 number=taken,
                 exam=exid,
                 student=uid,
-                over_at=take['over_at',
+                over_at=take['over_at'],
                 score=take['score'],
                 progress=take['progress'])
     return take

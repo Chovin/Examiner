@@ -1,14 +1,6 @@
 <html>
   <head>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
-<!--     <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet"> -->
-    
-<!--     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/fontawesome.min.css" integrity="sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7" crossorigin="anonymous">   -->
-
+    {% include '_includes.html' %}
     <style>
       .inline-radio {
         flex: 0 0 auto;
@@ -20,93 +12,98 @@
   </head>
   <body>
     <div id="vm">
-      <h1>Question Bank</h1>
-      <v-form>
-        <v-text-field v-model="name" label="Name"></v-text-field>
-        <div id="bankContainer"></div>
-        <v-btn @click="save" :disabled="name.trim()===''">Save</v-btn>
-        <v-btn @click="back">Back</v-btn>
-      </v-form>
-      <v-container>
-        <v-row v-for="(q, i) in qs">
-        <v-card class="q-card">
-          <v-card-text class="q-card">
-            <v-container>
-              <v-row>
-                [[i]] [[q.text]]
-                <v-col class="text-right">
-                <v-btn @click="duplicate_q(i)">Duplicate</v-btn>
-                <v-btn @click="open_edit_q(i)">Edit</v-btn>
-                <v-btn @click="delete_q_prompt(i)">Delete</v-btn>
-                </v-col>
-              </v-row>
-            </v-container>
-          </v-card-text>
-        </v-card>
-        </v-row>
-      </v-container>
-      <v-dialog
-        v-model="add_q_toggle"
-        persistent
-        width="1024"
-      >
-        <template v-slot:activator="{ props }">
-          <v-btn :disabled="name.trim()===''" v-bind="props" @click="open_new_question_menu">Add Question</v-btn>
-        </template>
-        <v-card>
-          <v-card-text>
-            <v-container>
-              <v-row>
-                <v-col cols="12">
-                  <v-select
-                    v-model="q_type"
-                    :items="q_types"
-                    label="Type"
-                  ></v-select>
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col cols="12">
-                  <v-textarea v-model="q_text" label="Question" required></v-textarea>
-                </v-col>
-              </v-row>
-              <div v-if="q_type!=='Essay'" >
-                <v-radio-group v-if="q_type=='Single Answer'" v-model="answer_choice">
-                  <v-row v-for="choice in choices">
-    <!--                 <v-col cols="12"> -->
-                      <v-radio v-else :value="choice.id" class="pe-2 inline-radio" v-model="answer_choice"></v-radio>
-                      <v-text-field
-                        v-model="choice.text" hide-details
-                      ></v-text-field>
-                      <v-btn @click="remove_choice(choice.id)">x</v-btn>
-    <!--                 </v-col> -->
-                    <v-btn @click="add_choice">+</v-btn>
+      <v-app>
+        <header>{% include '_navigation.html' %}</header>
+        <v-main>
+          <h1>Question Bank</h1>
+          <v-form>
+            <v-text-field v-model="name" label="Name"></v-text-field>
+            <div id="bankContainer"></div>
+            <v-btn @click="save" :disabled="name.trim()===''">Save</v-btn>
+            <v-btn @click="back">Back</v-btn>
+          </v-form>
+          <v-container>
+            <v-row v-for="(q, i) in qs">
+            <v-card class="q-card">
+              <v-card-text class="q-card">
+                <v-container>
+                  <v-row>
+                    [[i]] [[q.text]]
+                    <v-col class="text-right">
+                    <v-btn @click="duplicate_q(i)">Duplicate</v-btn>
+                    <v-btn @click="open_edit_q(i)">Edit</v-btn>
+                    <v-btn @click="delete_q_prompt(i)">Delete</v-btn>
+                    </v-col>
                   </v-row>
-                </v-radio-group>
-                <div v-else>
-                  <v-row v-for="choice in choices">
-    <!--                 <v-col cols="12"> -->
-                      <v-checkbox-btn v-if="q_type=='Multiple Answer'" v-model="choice.is_answer" class="pe-2"></v-checkbox-btn>
-                      <v-text-field
-                        v-model="choice.text" hide-details
-                      ></v-text-field>
-                      <v-btn @click="remove_choice(choice.id)">x</v-btn>
-    <!--                 </v-col> -->
-                    <v-btn @click="add_choice">+</v-btn>
+                </v-container>
+              </v-card-text>
+            </v-card>
+            </v-row>
+          </v-container>
+          <v-dialog
+            v-model="add_q_toggle"
+            persistent
+            width="1024"
+          >
+            <template v-slot:activator="{ props }">
+              <v-btn :disabled="name.trim()===''" v-bind="props" @click="open_new_question_menu">Add Question</v-btn>
+            </template>
+            <v-card>
+              <v-card-text>
+                <v-container>
+                  <v-row>
+                    <v-col cols="12">
+                      <v-select
+                        v-model="q_type"
+                        :items="q_types"
+                        label="Type"
+                      ></v-select>
+                    </v-col>
                   </v-row>
-                </div>
-              </div>
-              <v-row>
-                <v-col class="text-right">
-                  <v-btn @click="add_q_toggle=false">Cancel</v-btn>
-                  <v-btn @click="save_question">Save</v-btn>
-                </v-col>
-              </v-row>
-            </v-container>
-          </v-card-text>
-        </v-card>
-      </v-dialog>
-      <v-btn @click="back">Back</v-btn>
+                  <v-row>
+                    <v-col cols="12">
+                      <v-textarea v-model="q_text" label="Question" required></v-textarea>
+                    </v-col>
+                  </v-row>
+                  <div v-if="q_type!=='Essay'" >
+                    <v-radio-group v-if="q_type=='Single Answer'" v-model="answer_choice">
+                      <v-row v-for="choice in choices">
+        <!--                 <v-col cols="12"> -->
+                          <v-radio v-else :value="choice.id" class="pe-2 inline-radio" v-model="answer_choice"></v-radio>
+                          <v-text-field
+                            v-model="choice.text" hide-details
+                          ></v-text-field>
+                          <v-btn @click="remove_choice(choice.id)">x</v-btn>
+        <!--                 </v-col> -->
+                        <v-btn @click="add_choice">+</v-btn>
+                      </v-row>
+                    </v-radio-group>
+                    <div v-else>
+                      <v-row v-for="choice in choices">
+        <!--                 <v-col cols="12"> -->
+                          <v-checkbox-btn v-if="q_type=='Multiple Answer'" v-model="choice.is_answer" class="pe-2"></v-checkbox-btn>
+                          <v-text-field
+                            v-model="choice.text" hide-details
+                          ></v-text-field>
+                          <v-btn @click="remove_choice(choice.id)">x</v-btn>
+        <!--                 </v-col> -->
+                        <v-btn @click="add_choice">+</v-btn>
+                      </v-row>
+                    </div>
+                  </div>
+                  <v-row>
+                    <v-col class="text-right">
+                      <v-btn @click="add_q_toggle=false">Cancel</v-btn>
+                      <v-btn @click="save_question">Save</v-btn>
+                    </v-col>
+                  </v-row>
+                </v-container>
+              </v-card-text>
+            </v-card>
+          </v-dialog>
+          <v-btn @click="back">Back</v-btn>
+        </v-main>
+      </v-app>
     </div>
   <script>
     const { createApp } = Vue

@@ -1,27 +1,66 @@
 <html>
   <head>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
-  </head>
+    {% include "_includes.html" %}
   <body>
     <div id="vm">
-      <h1>[[greeting]]</h1>
-      <v-text-input v-model="greeting" value="Greeting">blah</v-text-input>
-      <p>This is from Flask: <b>{{ user.name }}</b></p>
+      <v-app>        
+        <header>{% include "_navigation.html" %}</header>
+        <v-main>
+          <v-data-table
+            :headers="headers"
+            :items="user_exams"
+          >
+            <template v-slot:item.name="{ item }">
+              <v-btn variant="text" :href="'/take_exam?id=' + item.raw.eid">[[ exams[item.raw.eid].name ]]</v-btn>
+            </template>
+            <template v-slot:item.can_take="{ item }">
+              <v-checkbox v-model="item.raw.can_take" :disabled="true"></v-checkbox>
+            </template>
+          </v-data-table>
+        </v-main>
+      </v-app>
     </div>
     <script>
     const { createApp } = Vue
     const { createVuetify } = Vuetify
     
     const vuetify = createVuetify({ iconfont: "fa" })
+
+    exams = {
+      {%- for eid, e in exams.items() %}
+        "{{eid}}": {
+        eid: "{{eid}}", 
+        name: "{{e.name}}", 
+        time_alotted: {{e.time_alotted}},
+        is_open: {{"true" if e.is_open else "false"}},
+        structure: { {%- for sid, s in e.structure.items() %}
+          "{{ sid }}": {amt: {{s.amt}}, points: {{s.points}}},
+        {%- endfor %}
+        }
+      },
+      {%- endfor %}
+    }
     
     const app = createApp({
       data() {
         return {
-          greeting: "hi there!"
+          exams: exams,
+          user: {{ user|tojson }},
+          headers: [
+            {title: 'Assignment', key: 'name'},
+            {title: 'Score', key: 'best_score'},
+            {title: 'Can Take (or retake)', key: 'can_take'},
+          ]
+        }
+      },
+      computed: {
+        user_exams() {
+          let lst = []
+          exams = this.user.exams
+          for (let eid in exams) {
+            lst.push({eid: eid, ...exams[eid]})
+          }
+          return lst
         }
       },
       delimiters: ['[[',']]']

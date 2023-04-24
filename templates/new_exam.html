@@ -1,10 +1,6 @@
 <html>
   <head>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js" integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.1.13/dist/vuetify.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+    {% include '_includes.html' %}
   <style>
     .table_row td:first-child {
       padding-right: 1em;
@@ -14,6 +10,9 @@
   </head>
   <body>
     <div id="vm">
+      <v-app>
+        <header>{% include '_navigation.html' %}</header>
+        <v-main>
       <h1>Exam</h1>
       <v-container>
         <v-text-field label="Exam name" v-model="name"></v-text-field>
@@ -81,6 +80,8 @@
         <v-form id="questionBankForm">
         </v-form>
       </v-container>
+        </v-main>
+      </v-app>
     </div>
     <script>
       

@@ -1,0 +1,51 @@
+<v-app-bar>
+  <template v-slot:append>
+    <v-menu
+        min-width="200px"
+        rounded
+      >
+        <template v-slot:activator="{ props }">
+          <v-btn
+            icon
+            v-bind="props"
+          >
+            <v-avatar>
+              <v-img
+                src="{{current_user.profile_pic}}"
+              ></v-img>
+            </v-avatar>
+          </v-btn>
+        </template>
+        <v-card>
+          <v-card-text class="text-center">
+            <v-avatar rounded="0" size="large">
+              <v-img
+                src="{{current_user.profile_pic}}"
+              ></v-img>
+            </v-avatar>
+            <h3 style="margin-top: 1em;">{{ current_user.name }}</h3>
+            <h4>{{ current_user.email }}</h4>
+            {% if current_user.is_teacher %}
+            <div><b>Teacher</b></div>
+            {% endif %}  
+            {% if current_user.is_admin %}
+            <div><b>Admin</b></div>
+            {% endif %}  
+          </v-card-text>
+          <v-card-actions class="justify-center">
+            {% if current_user.is_teacher %}
+            <v-btn href="/dashboard">dashboard</v-btn>
+            {% endif %}
+            <v-btn href="/logout">Logout</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-menu>
+    <!-- <v-btn icon="mdi-dots-vertical"></v-btn> -->
+  </template>
+  <v-app-bar-title>Examiner
+    <v-btn href="/assigned">Assignments</v-btn>
+    {% if current_user.is_teacher %}
+    <v-btn href="/student_watchtower">Watchtower</v-btn>
+    {% endif %}
+  </v-app-bar-title>
+</v-app-bar>

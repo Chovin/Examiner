@@ -25,6 +25,7 @@ from db import init_db_command, get_db
 from user import User
 from exam import Exam
 from bank import Bank
+from take import Take
 from utils import teacher_required
 
 # Configuration
@@ -70,7 +71,8 @@ def index():
       db = get_db()
       exs = db['exams']
       exams = {e: exs.get(e) for e in current_user.exams}
-      return render_template('index.html', user=current_user, exams=exams)
+      return redirect('assigned')
+      # return render_template('index.html', user=current_user, exams=exams)
     else:
       return render_template('login_prompt.html')
 
@@ -229,11 +231,11 @@ def student_watchtower():
 def assigned():
   ex = Exam.all(as_dicts=True)
   exams = {i:e for i, e in ex.items() if i in current_user.exams}
-  takes = {eid: Take.all(current_user, exam)
+  takes = {eid: Take.all(current_user, Exam.get(eid))
     for eid in exams
   }
 
-  return render_template('assigned.html', exams=exams, takes=takes, user=current_user)
+  return render_template('assigned.html', exams=exams, takes=takes, user=current_user.to_dict())
   
 
 @app.route('/user/<uid>/<int:eid>/<action>', methods=['POST'])

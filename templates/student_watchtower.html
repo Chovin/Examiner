@@ -1,11 +1,6 @@
 <html>
   <head>
-    <script src="https://unpkg.com/vue@3.2.47/dist/vue.global.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.1.15/dist/vuetify.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.15/dist/vuetify.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.1.15/dist/vuetify-labs.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.1.15/dist/vuetify-labs.css">
+    {% include '_includes.html' %}
     <style>
       .avatar-name {
         margin-left: 1em;
@@ -15,29 +10,31 @@
   <body>
     <div id="app">
       <v-app>
-        <h1>Students</h1>
-        <v-select
-          v-model="selected_exam"
-          :items="exams_list"
-          item-title="name"
-          item-value="eid"
-          hide-details
-          single-line
-        ></v-select>
-        <v-data-table
-          :headers="headers"
-          :items="users_table_list"
-        >
-          <template v-slot:item.student="{ item }">
-            <v-avatar>
-              <v-img :src="item.raw.student.profile_pic" :alt="item.raw.student.name"></v-img>
-            </v-avatar>
-            <strong class="avatar-name" v-html="item.raw.student.name"></strong>
-          </template>
-          <template v-slot:item.can_take="{ item }">
-            <v-checkbox v-model="item.value.can_take" @click="toggle_can_take(item.raw.student)"></v-checkbox>
-          </template>
-        </v-data-table>
+        <header>{% include '_navigation.html' %}</header>
+        <v-main>
+          <h1>Students</h1>
+          <v-select
+            v-model="selected_exam"
+            :items="exams_list"
+            item-title="name"
+            item-value="eid"
+            label="Exam"
+          ></v-select>
+          <v-data-table
+            :headers="headers"
+            :items="users_table_list"
+          >
+            <template v-slot:item.student="{ item }">
+              <v-avatar>
+                <v-img :src="item.raw.student.profile_pic" :alt="item.raw.student.name"></v-img>
+              </v-avatar>
+              <strong class="avatar-name" v-html="item.raw.student.name"></strong>
+            </template>
+            <template v-slot:item.can_take="{ item }">
+              <v-checkbox v-model="item.value.can_take" @click="toggle_can_take(item.raw.student)"></v-checkbox>
+            </template>
+          </v-data-table>
+        </v-main>
       </v-app>
     </div>
     <script>
@@ -104,7 +101,11 @@
               let tbl = []
               for (let u of this.users) {
                 exam = u.exams[this.selected_exam] ?? {current_take: 'not assigned', can_take: false}
-                tbl.push({student: u, current_take: exam.current_take , can_take: exam.can_take})
+                cell = {student: u, current_take: exam.current_take , can_take: exam.can_take}
+                if (exam.best_grade != undefined) {
+                  cell.best_grade = exam.best_grade
+                }
+                tbl.push(cell)
               }
               return tbl
             },
