@@ -139,13 +139,13 @@ def _login_callback():
 )
   
   # TODO: remove this and add a different/better system later
-  all_exams = Exam.all(as_dicts=True)
-  exams = {k: {'can_take': True, 'current_take': 1} for k in all_exams}
+  # all_exams = Exam.all(as_dicts=True)
+  # exams = {k: {'can_take': True, 'current_take': 1} for k in all_exams}
   
 
   # Doesn't exist? Add it to the database.
   if not User.get(unique_id):
-    User.create(unique_id, users_name, users_email, picture, False, False, exams=exams)
+    User.create(unique_id, users_name, users_email, picture, False, False, exams={})
 
   # Begin user session by logging the user in
   login_user(user)
@@ -235,7 +235,29 @@ def assigned():
 
   return render_template('assigned.html', exams=exams, takes=takes, user=current_user)
   
-  
+
+@app.route('/user/<uid>/<int:eid>/<action>', methods=['POST'])
+@login_required
+def assign_exam(uid, eid, action):
+  if not current_user.is_teacher:
+    abort(403)
+  exam = Exam.get(eid)
+  if exam is None:
+    abort(404)
+  if current_user.id != exam.author.id:
+    abort(403)
+  student = User.get(uid)
+  if student is None:
+    abort(404)
+  actions = {
+    'assign': student.assign_exam,
+    'unassign': student.unassign_exam,
+  }
+  if action not in actions:
+    abort(404)
+  actions[action](eid)
+  return jsonify(student.to_dict()['exams'][str(eid)])
+
 
 @app.route('/exam/list', methods=['GET'])
 @login_required

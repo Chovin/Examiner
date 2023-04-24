@@ -61,6 +61,18 @@ class User(UserMixin):
       'exams': exams
     }
 
+  def assign_exam(self, eid):
+    eid = str(eid)
+    if eid in self.exams:
+      self.exams[eid]['can_take'] = True
+    else:
+      self.exams[eid] = {'can_take': True, 'current_take': 1}
+
+  def unassign_exam(self, eid):
+    eid = str(eid)
+    if eid in self.exams:
+      self.exams[eid]['can_take'] = False
+
   def to_dict(self):
     return {
       'id': self.id,

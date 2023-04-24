@@ -30,12 +30,12 @@
         >
           <template v-slot:item.student="{ item }">
             <v-avatar>
-              <v-img :src="item.raw.student.pic" :alt="item.raw.student.name"></v-img>
+              <v-img :src="item.raw.student.profile_pic" :alt="item.raw.student.name"></v-img>
             </v-avatar>
             <strong class="avatar-name" v-html="item.raw.student.name"></strong>
           </template>
           <template v-slot:item.can_take="{ item }">
-            <v-checkbox v-model="item.can_take"></v-checkbox>
+            <v-checkbox v-model="item.value.can_take" @click="toggle_can_take(item.raw.student)"></v-checkbox>
           </template>
         </v-data-table>
       </v-app>
@@ -68,16 +68,18 @@
             headers: [
               {title:'Student', key:'student'},
               // {title:"Exams", key:'exams'}, 
+              {title:"Best Grade", key:'best_grade'},
               {title:'Current Take', key:'current_take'},
-              {title:"Can Take/Retake", key:'can_take'}],
+              {title:"Can Take/Retake", key:'can_take'},
+            ],
             users: [{%- for uid, u in users.items() %}
               {
-               uid: "{{uid}}", 
+               id: "{{uid}}", 
                name: "{{u.name}}",
-               pic: "{{u.profile_pic}}",
+               profile_pic: "{{u.profile_pic}}",
                exams: {
                  {%- for eid, e in u.exams.items() %}
-                 "{{eid}}": {eid: "{{eid}}", 
+                 "{{eid}}": { 
                   can_take: {{"true" if e.can_take else "false" }},
                   current_take: {{ e.current_take }}
                  },
@@ -97,17 +99,23 @@
               this._selected_exam = v
             }
           },
-          users_table_list() {
-            let tbl = []
-            for (let u of this.users) {
-              exam = u.exams[this.selected_exam] ?? {current_take: 'not assigned', can_take: false}
-              tbl.push({student: u, current_take: exam.current_take , can_take: exam.can_take})
+          users_table_list: {
+            get() {
+              let tbl = []
+              for (let u of this.users) {
+                exam = u.exams[this.selected_exam] ?? {current_take: 'not assigned', can_take: false}
+                tbl.push({student: u, current_take: exam.current_take , can_take: exam.can_take})
+              }
+              return tbl
+            },
+            set(v) {
+              console.log('trying to set', v)
             }
-            return tbl
           },
           exams_list() {
             let lst = []
             for (let e in this.exams) {
+              this.exams[e].eid = e
               lst.push(this.exams[e])
             }
             return lst
@@ -128,6 +136,27 @@
               lst.push(e)
             }
             return lst
+          }
+        },
+        methods: {
+          async toggle_can_take(student) {
+            eid = this.selected_exam
+            exam = student.exams[eid]
+            action = 'assign'
+            if (exam != undefined && exam.can_take) {
+              action = 'unassign'
+            }
+            resp = await fetch('/user/' + student.id + '/' + eid + '/' + action, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              }
+            })
+            exam = await resp.json()
+            if (exam != null) {
+              student.exams[eid] = exam
+            }
           }
         },
         delimiters: ['[[',']]']
