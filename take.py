@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from replit.database import dumps
 import json
 from bank import Bank
+from user import User
+from exam import Exam
 import random
 
 
@@ -17,15 +19,15 @@ class Take():
                student,
                ends_at,
                score=None,
-               progress={}):
+               status="not started",
+               progress=[]):
     self.id = id_
-    self.exam = exam
-    self.student = student
+    self.exam = Exam.get(exam)
+    self.student = User.get(student)
     self.over_at = ends_at
     self.score = score
+    self.status = status
     self.progress = progress
-
-
   
   @staticmethod
   def all(user, exam, as_dicts=False):
@@ -52,7 +54,16 @@ class Take():
                 student=uid,
                 over_at=take['over_at'],
                 score=take['score'],
+                status=take['status'],
                 progress=take['progress'])
+    return take
+
+  @staticmethod
+  def last_take(user, exam):
+    all_takes = Take.all(user, exam)
+    if not all_takes:
+      return None
+    take_id, take = str(max(all_takes.items(), key=lambda k: int(k.rsplit('_'))))
     return take
 
   @staticmethod
@@ -69,26 +80,55 @@ class Take():
     db[id_] = {
       'score': None,
       'over_at': over_at,
-      'progress': {}
+      'status': 'not started',
+      'progress': []
     }
 
+  def start(self):
+    if self.exam.is_open and self.student.exams[self.exam.id].can_take:
+      self.status = "started"
+      self.over_at = datetime.now() + timedelta(minutes=self.exam.time_alotted)
+      self.commit()
+
+  def is_started(self):
+    """questions can be answered"""
+    if self.status != "started" or self.is_ended():
+      return False
+    return True
+
+  def is_ended(self):
+    return datetime.now().timestamp() > this.over_at
+
+  def get_seed(self, qbid, qid, qn):
+    return f'{this.get_id()}_{qbid}_{qid}_{qit}'
+  
   def get_question(self, i):
     """i is 1-indexed question number"""
     db = get_db()
     qit = 1
-    for qbid, bankf in self.exam.structure.items():
-      for qi in range(bankf.amt):
+    for qp in self.progress:
+      if qit == i:
+        return Bank.get(qp['qbid']).get_question(qp['qid'], answers_hidden=True, seed=this.get_seed(qp['qbid'], qb['qid'], qit))
+      qit += 1
+
+    q = None
+    # generate new progress
+    for qbid, amt_pnts in self.exam.structure.items():
+      bank = Bank.get(qbid)
+      for qi in range(amt_pnts['amt']):
+        done_qs = [p['qid'] for p in self.progress if p['gbid'] == qbid]
+        pool = [ qid for qid in bank.questions.keys() if qid not in done_qs ]
+        qid = random.choice(pool)
+        self.progress.append({'qbid': qbid, 'qid': qid, 'answer': []})
+        seed = this.get_seed(qbid, qid, qit)
         if qit == i:
           break
         qit += 1
       if qit == i:
         break
-      qpfx = f'{qbid}_'
-      done_qs = [k[len(qpfx):] for k in self.progress if k.startswith(qpfx)]
-      bank = Bank.get(qbid)
-      pool = { qid: q for qid, q in bank.questions.items() if qid not in done_qs }
-      qid = random.choice(pool)
-      return bank.questions[qid]
+        
+    self.commit()
+    return bank.get_question(qid, answers_hidden=True, seed=seed)
     
   # do I really need to seed it
   # does it need to be deterministic?
@@ -104,3 +144,8 @@ class Take():
           'score': self.score,
           'progress': json.loads(dumps(self.progress))
     }
+    
+  def commit(self):
+    db = get_db()
+    _id = self.get_id()
+    db[_id] = self.to_dict()

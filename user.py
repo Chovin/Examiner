@@ -61,6 +61,14 @@ class User(UserMixin):
       'exams': exams
     }
 
+  def is_assigned(self, eid):
+    eid = str(eid)
+    return bool(self.exams.get(eid))
+
+  def can_take(self, eid):
+    eid = str(eid)
+    return self.exams.get(eid, {'can_take': False})['can_take']
+
   def assign_exam(self, eid):
     eid = str(eid)
     if eid in self.exams:

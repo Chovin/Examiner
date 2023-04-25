@@ -11,7 +11,7 @@
             :items="user_exams"
           >
             <template v-slot:item.name="{ item }">
-              <v-btn variant="text" :href="'/take_exam?id=' + item.raw.eid">[[ exams[item.raw.eid].name ]]</v-btn>
+              <v-btn variant="text" :href="'/prep_area/' + item.raw.eid">[[ exams[item.raw.eid].name ]]</v-btn>
             </template>
             <template v-slot:item.can_take="{ item }">
               <v-checkbox v-model="item.raw.can_take" :disabled="true"></v-checkbox>

@@ -107,7 +107,7 @@
           return {
             name: '{{exam.name}}',
             time: '{{exam.time_alotted or 75}}',
-            is_open: false,
+            is_open: {{"true" if exam.is_open else "false"}},
             amt: "1",
             points: "1",
             bankN: 0,

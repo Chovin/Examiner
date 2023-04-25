@@ -2,6 +2,7 @@ from db import get_db
 from user import User
 from replit.database import dumps
 import json
+import random
 
 class Bank():
   def __init__(self,
@@ -72,9 +73,31 @@ class Bank():
     db = get_db()
     db['qb_'+str(self.id)] = self.to_dict()
 
-  def get_question(self, qid):
+  def get_question(self, qid, answers_hidden=False, seed=False):
+    """if answers_hidden, the choices dict becomes a list of format [{'id': choice_id, 'text': text}, ...]
+    if seed is also given, shuffles the choices after seeding random with that seed
+    """
     q = self.questions.get(str(qid))
-    return json.loads(dumps(q))
+    if q is None:
+      return q
+    q = json.loads(dumps(q))
+    if not answers_hidden:
+      return q
+
+    # if answers_hidden, return a list /shrug
+    choices = [
+      {'id': c ,'text': v['text']} for c,v in q['choices'].items()
+    ]
+    if seed:
+      random.seed(seed)
+      random.shuffle(choices)
+    q = {
+      'id': q['id'],
+      'text': q['text'],
+      'type': q['type'],
+      'choices': choices
+    }
+    return q
     
   def add_question(self, text, type_, choices):
     key = str(self.questions['next_id'])

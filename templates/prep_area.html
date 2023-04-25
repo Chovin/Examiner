@@ -1,0 +1,92 @@
+<html>
+  <head>
+    {% include "_includes.html" %}
+  <body>
+    <div id="vm">
+      <v-app>        
+        <header>{% include "_navigation.html" %}</header>
+        <v-main>
+          <div class="d-flex align-center flex-column ">
+            <v-card width="400">
+              <template v-slot:title>[[ exam.name ]]</template>
+              <template v-slot:text>
+                <div>Minutes to complete: <b>[[ exam.time_alotted ]]</b></div>
+                <div><b>
+                [[ exam.is_open ? "can start" : "can't start yet" ]]
+                </b></div>
+                <div v-if="!can_take"><b>
+                  Ask the teacher for a retake
+                </b></div>
+              </template>
+              <template v-slot:actions>
+                <v-btn :disabled="!can_take || loading" @click="start">start 
+                  <v-progress-circular
+                    indeterminate
+                    color="primary"
+                    v-if="loading"
+                    size="25"
+                  ></v-progress-circular>
+                </v-btn>
+                <!-- TODO -->
+                <v-btn v-if="take">see prev</v-btn>
+              </template>
+              
+            </v-card>
+          </div>
+        </v-main>
+      </v-app>
+    </div>
+    <script>
+    const { createApp } = Vue
+    const { createVuetify } = Vuetify
+    
+    const vuetify = createVuetify({ iconfont: "fa" })
+    
+    const app = createApp({
+      data() {
+        return {
+          exam: {{exam|tojson}},
+          user: {{user|tojson}},
+          take: {{ take.id if take else 'false' }},
+          loading: false,
+          timer: null
+        }
+      },
+      computed: {
+        can_take() {
+          return this.user.exams[this.exam.id].can_take
+        }  
+      },
+      methods: {
+        start() {
+          this.loading = true
+          this._try_start(this)
+          setTimeout(this.stop_trying_to_start.bind(this), 1000*60*10)
+        },
+        async _try_start(self) {
+          response = await fetch('/exam/' + self.exam.id)
+          contents = await response.json()
+          self.exam = contents
+          if (self.exam.is_open && self.can_take) {
+            self.loading = false
+            window.location.replace('/take_exam/' + self.exam.id) 
+          }
+          
+          self.timer = setTimeout(((s) => {
+            return (async () => {
+              await self._try_start(s)
+            })
+          })(self),
+          1000*10)
+        },
+        stop_trying_to_start() {
+          this.loading = false
+          clearTimeout(this.timer)
+        }
+      },
+      delimiters: ['[[',']]']
+    })
+    app.use(vuetify).mount('#vm')
+    </script>
+  </body>
+</html>

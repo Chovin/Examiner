@@ -236,7 +236,35 @@ def assigned():
   }
 
   return render_template('assigned.html', exams=exams, takes=takes, user=current_user.to_dict())
-  
+
+@app.route('/prep_area/<int:eid>')
+@login_required
+def prep_exam(eid):
+  # allow them to see this page so they can see the last test
+  # if not current_user.can_take(eid):
+  #   abort(403)
+  exam = Exam.get(eid)
+  if exam is None:
+    abort(404)
+  if str(eid) not in current_user.exams:
+    abort(403)
+
+  take = Take.last_take(current_user, exam)
+
+  return render_template('prep_area.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take)
+
+@app.route('/take_exam/<int:eid>')
+@login_required
+def take_exam(eid):
+  exam = Exam.get(eid)
+  if exam is None:
+    abort(404)
+  if not current_user.can_take(eid):
+    abort(403)
+
+  take = Take.last_take(current_user, exam)
+
+  return render_template('take_exam.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take)
 
 @app.route('/user/<uid>/<int:eid>/<action>', methods=['POST'])
 @login_required
@@ -278,7 +306,7 @@ def get_exam(eid):
   exam = Exam.get(eid)
   if exam is None:
     abort(404)
-  if eid not in current_user.exams:
+  if str(eid) not in current_user.exams:
     if current_user.is_teacher and request.args.get('authored') and exam.author.id == current_user.id:
       pass
     else:

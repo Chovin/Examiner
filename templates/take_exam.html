@@ -1,0 +1,56 @@
+<html>
+  <head>
+    {% include "_includes.html" %}
+  <body>
+    <div id="vm">
+      <v-app>        
+        <header>{% include "_navigation.html" %}</header>
+        <v-main>
+          <div class="d-flex align-center flex-column ">
+            <v-carousel hide-delimiters progress="primary">
+              <v-carousel-item
+                v-for="q in questions"  
+              >
+                
+              </v-carousel-item>
+              <template v-slot:next="{ props }">
+                <v-btn icon="mdi-plus">
+                  
+                </v-btn>
+              </template>
+            </v-carousel>
+          </div>
+        </v-main>
+      </v-app>
+    </div>
+    <script>
+    const { createApp } = Vue
+    const { createVuetify } = Vuetify
+    
+    const vuetify = createVuetify({ iconfont: "fa" })
+    
+    const app = createApp({
+      data() {
+        return {
+          exam: {{exam|tojson}},
+          user: {{user|tojson}},
+          take: {{ take.id if take else 'false' }},
+          questions: [
+            
+          ]
+        }
+      },
+      computed: {
+        can_take() {
+          return this.user.exams[this.exam.id].can_take
+        }  
+      },
+      mounted() {
+        
+      },
+      delimiters: ['[[',']]']
+    })
+    app.use(vuetify).mount('#vm')
+    </script>
+  </body>
+</html>

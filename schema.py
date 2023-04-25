@@ -27,9 +27,10 @@
   'ue_<uid>_<exid>_<take#>': {
     'score': score,  # None if not started
     'over_at': over_at,
-    'progress': {
-      '<qbid>_<qid>': [choice_id|text,...]
-    }
+    'status': "not started" | "started" | "finished",
+    'progress': [
+      {'qbid': qbid, 'qid': qid, 'answer': [choice_id|text,...]},
+    ]
   },
   'qb_<id>': {
     'name': name,
