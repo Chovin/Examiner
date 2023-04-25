@@ -6,7 +6,7 @@
       'profile_pic': profile_pic,
       'is_teacher': is_teacher,
       'is_admin': is_admin,
-      'exams': {id: {can_take: true}}
+      'exams': {id: {can_take: true, current_take: 1}}
     }
   },
   'exams': {
@@ -40,12 +40,13 @@
         'id': qid,
         'text': text,
         'type': type,
-        'choices': {
-          'choice_id': {
+        'choices': [
+          {
+            'id': id,
             'text': text,
             'is_answer': is_answer # None if example essay answer
           }
-        }
+        ]
       }
     }
   },

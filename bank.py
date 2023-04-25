@@ -84,9 +84,9 @@ class Bank():
     if not answers_hidden:
       return q
 
-    # if answers_hidden, return a list /shrug
+
     choices = [
-      {'id': c ,'text': v['text']} for c,v in q['choices'].items()
+      {'id': v['id'],'text': v['text']} for v in q['choices']
     ]
     if seed:
       random.seed(seed)

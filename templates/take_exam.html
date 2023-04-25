@@ -1,20 +1,44 @@
 <html>
   <head>
     {% include "_includes.html" %}
+    
   <body>
     <div id="vm">
       <v-app>        
         <header>{% include "_navigation.html" %}</header>
         <v-main>
           <div class="d-flex align-center flex-column ">
-            <v-carousel hide-delimiters progress="primary">
+            <v-carousel :show-arrows="false" v-model="question_index" hide-delimiters progress="primary">
               <v-carousel-item
+                class="px-10"
                 v-for="q in questions"  
               >
-                
+                <v-card class="pa-2">
+                  <template v-slot:title>[[question_index+1]]. [[q.text]]</template>
+
+                  <template v-slot:text>
+                    <div min-height="600px"></div>
+                  </template>
+                  
+                  <v-card-actions>
+                    <v-btn icon="mdi-chevron-left" @click="prev" :disabled="question_index == 0">
+                  
+                    </v-btn>
+                    <v-spacer v-else></v-spacer>
+                    <v-btn v-if="question_index==this.questions.length-1">Submit</v-btn>
+                    <v-btn v-else icon="mdi-chevron-right" @click="next" :disabled="question_index == this.questions.length-1">
+                  
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
               </v-carousel-item>
               <template v-slot:next="{ props }">
-                <v-btn icon="mdi-plus">
+                <v-btn icon="mdi-chevron-right" @click="next" :disabled="question_index == this.questions.length-1">
+                  
+                </v-btn>
+              </template>
+              <template v-slot:prev="{ props }">
+                <v-btn icon="mdi-chevron-left" @click="prev" :disabled="question_index == 0">
                   
                 </v-btn>
               </template>
@@ -32,11 +56,11 @@
     const app = createApp({
       data() {
         return {
+          question_index: 0,
           exam: {{exam|tojson}},
           user: {{user|tojson}},
-          take: {{ take.id if take else 'false' }},
+          take: {{ "'"+str(take.id)+"'" if take else 'false' }},
           questions: [
-            
           ]
         }
       },
@@ -45,8 +69,42 @@
           return this.user.exams[this.exam.id].can_take
         }  
       },
-      mounted() {
-        
+      methods: {
+        next() {
+          ni = Math.min(this.question_index+1, this.questions.length-1)
+          this.question_index = ni
+          this.load_question(ni)
+          this.load_question(Math.min(ni+1, this.questions.length-1))
+        },
+        prev() {
+          ni = Math.max(this.question_index-1, 0)
+          this.question_index = ni
+          this.load_question(ni)
+          this.load_question(Math.max(ni-1, 0))
+        },
+        async load_question(i) {
+          if (this.questions[i].not_loaded) {
+            resp = await fetch('/question/' + this.exam.id + '/' + i)
+            res = await resp.json()
+            this.questions[i] = res
+          }
+        }
+      },
+      async mounted() {
+        let qs = 0
+        for(let qbid in this.exam.structure) {
+          qs += this.exam.structure[qbid].amt
+        }
+        for (let i=0; i<qs; i++) {
+          this.questions.push({
+            text: 'Loading question...',
+            type: 'Single Answer',
+            choices: [],
+            not_loaded: true
+          })
+        }
+        await this.load_question(0)
+        await this.load_question(1)
       },
       delimiters: ['[[',']]']
     })

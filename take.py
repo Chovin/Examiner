@@ -17,14 +17,18 @@ class Take():
                number,
                exam,
                student,
-               ends_at,
+               over_at,
                score=None,
                status="not started",
                progress=[]):
     self.id = id_
+    self.number = number
     self.exam = Exam.get(exam)
     self.student = User.get(student)
-    self.over_at = ends_at
+    if isinstance(over_at, float):
+      self.over_at = over_at
+    else:
+      self.over_at = over_at.timestamp()
     self.score = score
     self.status = status
     self.progress = progress
@@ -63,7 +67,10 @@ class Take():
     all_takes = Take.all(user, exam)
     if not all_takes:
       return None
-    take_id, take = str(max(all_takes.items(), key=lambda k: int(k.rsplit('_'))))
+    take = None
+    for take_id, take in all_takes.items():
+      take.number
+    take_id, take = max(all_takes.items(), key=lambda k: k[1].number)
     return take
 
   @staticmethod
@@ -73,7 +80,7 @@ class Take():
   @staticmethod
   def create(number, exam, student):
     db = get_db()
-    id_ = get_id(number, exam, student)
+    id_ = Take.get_id(number, exam, student)
     mins = exam.time_alotted
     over_at = datetime.now() + timedelta(minutes=mins)
     over_at = over_at.timestamp()
@@ -83,12 +90,20 @@ class Take():
       'status': 'not started',
       'progress': []
     }
+    return Take.get(id_)
 
   def start(self):
-    if self.exam.is_open and self.student.exams[self.exam.id].can_take:
+    if self.exam.is_open and self.student.exams[self.exam.id]['can_take'] and self.status == "not started" and not self.is_ended():
       self.status = "started"
-      self.over_at = datetime.now() + timedelta(minutes=self.exam.time_alotted)
+      self.over_at = (datetime.now() + timedelta(minutes=self.exam.time_alotted)).timestamp()
       self.commit()
+
+  def can_get_question(self):
+    return self.status == "started" and not self.is_ended()
+    
+  def finish(self):
+    self.status = "finished"
+    self.commit()
 
   def is_started(self):
     """questions can be answered"""
@@ -97,10 +112,10 @@ class Take():
     return True
 
   def is_ended(self):
-    return datetime.now().timestamp() > this.over_at
+    return datetime.now().timestamp() > self.over_at
 
   def get_seed(self, qbid, qid, qn):
-    return f'{this.get_id()}_{qbid}_{qid}_{qit}'
+    return f'{self.id}_{qbid}_{qid}_{qn}'
   
   def get_question(self, i):
     """i is 1-indexed question number"""
@@ -108,7 +123,7 @@ class Take():
     qit = 1
     for qp in self.progress:
       if qit == i:
-        return Bank.get(qp['qbid']).get_question(qp['qid'], answers_hidden=True, seed=this.get_seed(qp['qbid'], qb['qid'], qit))
+        return Bank.get(qp['qbid']).get_question(qp['qid'], answers_hidden=True, seed=self.get_seed(qp['qbid'], qp['qid'], qit))
       qit += 1
 
     q = None
@@ -116,11 +131,13 @@ class Take():
     for qbid, amt_pnts in self.exam.structure.items():
       bank = Bank.get(qbid)
       for qi in range(amt_pnts['amt']):
-        done_qs = [p['qid'] for p in self.progress if p['gbid'] == qbid]
-        pool = [ qid for qid in bank.questions.keys() if qid not in done_qs ]
+        print(self.progress)
+        done_qs = [p['qid'] for p in self.progress if p['qbid'] == qbid]
+        print('-'*20 + 'pool')
+        pool = [ qid for qid in bank.questions.keys() if qid not in done_qs and qid != 'next_id' ]
         qid = random.choice(pool)
         self.progress.append({'qbid': qbid, 'qid': qid, 'answer': []})
-        seed = this.get_seed(qbid, qid, qit)
+        seed = self.get_seed(qbid, qid, qit)
         if qit == i:
           break
         qit += 1
@@ -132,8 +149,8 @@ class Take():
     
   # do I really need to seed it
   # does it need to be deterministic?
-  def get_seed(self, question_n):
-    return f'{self.id}_{question_n}'
+  # def get_seed(self, question_n):
+  #   return f'{self.id}_{question_n}'
 
   def to_dict(self):
     return {
@@ -141,11 +158,13 @@ class Take():
           'exam': self.exam.id,
           'student': self.student.id,
           'over_at': self.over_at,
+          'status': self.status,
           'score': self.score,
           'progress': json.loads(dumps(self.progress))
     }
     
   def commit(self):
     db = get_db()
-    _id = self.get_id()
-    db[_id] = self.to_dict()
+    print(self.to_dict())
+    db[self.id] = self.to_dict()
+    print('here')
