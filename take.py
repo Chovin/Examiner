@@ -47,6 +47,7 @@ class Take():
   def get(take_id):
     db = get_db()
     take = db.get(take_id)
+    print(take_id, take)
     _, uid, exid, taken = take_id.split('_')
     
     if not take:
@@ -66,11 +67,12 @@ class Take():
   def last_take(user, exam):
     print('last take start')
     num = user.exams[exam.id]['current_take']
-    try:
-      take = Take.get(Take.get_id(num, exam, user))
-    except error:
-      print(error)
-      return None
+    take = Take.get(Take.get_id(num, exam, user))
+    if take is None:
+      take = Take.get(Take.get_id(num-1, exam, user))
+
+    if take is None:
+      print("take shouldn't be none")
     # all_takes = Take.all(user, exam)
     # if not all_takes:
     #   return None
@@ -105,12 +107,27 @@ class Take():
 
   def can_get_question(self):
     return self.status == "started" and not self.is_ended()
+
+  def calculate_score(self):
+    bank = None
+    score = 0
+    for p in self.progress:
+      if bank is None or bank.id != p['qbid']:
+        bank = Bank.get(p['qbid'])
+      q = bank.get_question(p['qid'])
+      answers = set(int(c['id']) for c in q['choices'] if c['is_answer'])
+      if set(p['answer']):
+        score += int(self.exam.structure[bank.id]['points'])
+    self.score = score
     
   def finish(self):
+    self.calculate_score()
     self.status = "finished"
     self.commit()
-    self.student.exams[self.exam.id]['can_take'] = False
-    self.student.exams[self.exam.id]['current_take'] = int(self.number) + 1
+    uexam = self.student.exams[self.exam.id]
+    uexam['can_take'] = False
+    uexam['current_take'] = int(self.number) + 1
+    uexam['highest_score'] = max(uexam.get('highest_score', 0), self.score)
     self.student.commit()
 
   def is_started(self):
@@ -153,7 +170,7 @@ class Take():
         seed = self.get_seed(qbid, qid, qit)
         if qit == i:
           self.commit()
-          print(bank)
+          # print(bank)
           print(qid)
           q = bank.get_question(qid, answers_hidden=True, seed=seed)
           print('-question-',q)
@@ -162,6 +179,10 @@ class Take():
         
     return None
 
+  def update_progress(self, i, answers):
+    self.progress[i]['answer'] = answers
+    # self.commit()
+  
   def to_dict(self):
     return {
           'id': self.id,

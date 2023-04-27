@@ -26,7 +26,7 @@
             <v-carousel height="100%" :show-arrows="false" v-model="question_index" hide-delimiters progress="primary">
               <v-carousel-item
                 class="px-10"
-                v-for="q in questions"  
+                v-for="(q, i) in questions"  
               >
                 <v-card class="pa-2" flat>
                   <template v-slot:title>[[question_index+1]]. <span v-html="q.text"></span></template>
@@ -34,10 +34,10 @@
                   <v-card-text>
                     <v-container>
                       <div v-if="q.type!=='Essay'" >
-                        <v-radio-group v-if="q.type=='Single Answer'" v-model="answer_choice">
+                        <v-radio-group v-if="q.type=='Single Answer'" v-model="take.progress[i].answer[0]">
                           <v-row class="align-center radios" v-for="choice in q.choices">
             <!--                 <v-col cols="12"> -->
-                            <v-radio v-else :value="choice.id" class="pe-2 inline-radio" v-model="answer_choice"></v-radio>
+                            <v-radio v-else :value="choice.id" class="pe-2 inline-radio" @click="radio_select(i, choice.id)"></v-radio>
                             <span
                             >[[choice.text]]</span>
                           </v-row>
@@ -45,7 +45,7 @@
                         <div v-else>
                           <v-row class="align-center" v-for="choice in q.choices">
             <!--                 <v-col cols="12"> -->
-                              <v-checkbox-btn v-if="q.type=='Multiple Answer'" v-model="choice.is_answer" class="pe-2"></v-checkbox-btn>
+                              <v-checkbox-btn v-if="q.type=='Multiple Answer'" v-model="take.progress[i].answer" :value="choice.id" class="pe-2" @change="send_answer(i)"></v-checkbox-btn>
                               <span
                             >[[choice.text]]</span>
                           </v-row>
@@ -144,6 +144,27 @@
           this.load_question(ni)
           this.load_question(Math.max(ni-1, 0))
         },
+        async radio_select(i, cid) {
+          this.take.progress[i].answer = [cid]
+          await this.send_answer(i)
+        },
+        async send_answer(i) {
+          console.log(this.take.progress[i].answer)
+          resp = await fetch('/take/' + this.exam.id + '/progress', {
+            method: 'PUT',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              i: i,
+              answers: this.take.progress[i].answer
+            })
+          })
+          if (resp.status == 403) {
+            await this.finish()
+          }
+        },
         async load_question(i) {
           // i += 1
           if (this.questions[i].not_loaded) {
@@ -154,6 +175,7 @@
             }
             res = await resp.json()
             if (res == null) { // not sure why this ever is the case, but it is
+              // TODO: snuff this out
               await this.load_question(i)
             } else {
               this.questions[i] = res
@@ -182,6 +204,9 @@
         for(let qbid in this.exam.structure) {
           qs += parseInt(this.exam.structure[qbid].amt)
         }
+        if (!this.take) {
+          this.take = {progress: []}
+        }
         for (let i=0; i<qs; i++) {
           this.questions.push({
             text: 'Loading question...',
@@ -189,6 +214,9 @@
             choices: [],
             not_loaded: true
           })
+          if (!this.take.progress[i]) {
+            this.take.progress.push({answer: []})
+          }
         }
         if (localStorage.question_index) {
           this.question_index = parseInt(localStorage.question_index)

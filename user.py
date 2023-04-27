@@ -61,11 +61,6 @@ class User(UserMixin):
       'exams': exams
     }
 
-  def finish_take(self, eid):
-    self.exams[eid]['can_take'] = False
-    self.exams[eid]['current_take'] += 1
-    self.commit()
-
   def is_assigned(self, eid):
     eid = str(eid)
     return bool(self.exams.get(eid))

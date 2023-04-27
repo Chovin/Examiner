@@ -58,10 +58,24 @@
           let lst = []
           exams = this.user.exams
           for (let eid in exams) {
-            lst.push({eid: eid, ...exams[eid]})
+            let score = exams[eid].highest_score
+            let data = {eid: eid, ...exams[eid]}
+            if (score != undefined) {
+              data.best_score = ~~(score / this.total_score(this.exams[eid]) * 100) + "%"
+            }
+            lst.push(data)
           }
           return lst
         }
+      },
+      methods: {
+        total_score(exam) {
+          let pnts = 0
+          for(let qbid in exam.structure) {
+            pnts += parseInt(exam.structure[qbid].amt) * parseInt(exam.structure[qbid].points)
+          }
+          return pnts
+        },
       },
       delimiters: ['[[',']]']
     })

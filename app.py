@@ -328,6 +328,25 @@ def get_question(eid, i):
     take.finish()
     return jsonify(False)
 
+@app.route('/take/<int:eid>/progress', methods=['PUT'])
+@login_required
+def update_take_progress(eid):
+  if not request.json:
+    abort(400)
+  exam = Exam.get(eid)
+  if exam is None:
+    abort(404)
+  if not current_user.can_take(eid):
+    abort(403)
+  take = Take.last_take(current_user, exam)
+  if take.is_ended():
+    abort(403)
+
+  qi = int(request.json['i'])
+  answers = request.json['answers']
+  take.update_progress(qi, answers)
+  return jsonify(True)
+
 @app.route('/take/<int:eid>/finish', methods=['POST'])
 @login_required
 def finish_take(eid):

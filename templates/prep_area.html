@@ -10,6 +10,7 @@
             <v-card width="400">
               <template v-slot:title>[[ exam.name ]]</template>
               <template v-slot:text>
+                <div v-if="score!=null">Score: <b>[[ percentage ]]%</b></div>
                 <div>Number of questions:<b>[[ n_qs ]]</b></div>
                 <div>Minutes to complete: <b>[[ exam.time_alotted ]]</b></div>
                 <div><b>
@@ -63,6 +64,24 @@
             qs += parseInt(this.exam.structure[qbid].amt)
           }
           return qs
+        },
+        total_score() {
+          let pnts = 0
+          for(let qbid in this.exam.structure) {
+            pnts += parseInt(this.exam.structure[qbid].amt) * parseInt(this.exam.structure[qbid].points)
+          }
+          return pnts
+        },
+        score() {
+          let score = this.user.exams[this.exam.id].highest_score
+          if (score == undefined) {
+            return null
+          } else {
+            return score
+          }
+        },
+        percentage() {
+          return ~~(this.score / this.total_score * 100)
         }
       },
       methods: {
