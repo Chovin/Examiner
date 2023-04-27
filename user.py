@@ -62,8 +62,9 @@ class User(UserMixin):
     }
 
   def finish_take(self, eid):
-    self.exams[eid].can_take = False
-    self.exams[eid].current_take += 1
+    self.exams[eid]['can_take'] = False
+    self.exams[eid]['current_take'] += 1
+    self.commit()
 
   def is_assigned(self, eid):
     eid = str(eid)
@@ -95,3 +96,7 @@ class User(UserMixin):
       'is_admin': self.is_admin,
       'exams': json.loads(dumps(self.exams)),
     }
+
+  def commit(self):
+    db = get_db()
+    db['users'][self.id] = self.to_dict()

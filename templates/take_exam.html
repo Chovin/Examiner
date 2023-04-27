@@ -1,36 +1,81 @@
 <html>
   <head>
     {% include "_includes.html" %}
-    
+    <style>
+      .radios > .v-selection-control {
+        flex: 0 1;
+      }
+    </style>
   <body>
     <div id="vm">
       <v-app>        
         <header>{% include "_navigation.html" %}</header>
         <v-main>
           <div class="d-flex align-center flex-column ">
-            <v-carousel :show-arrows="false" v-model="question_index" hide-delimiters progress="primary">
+            <v-card flat>Time Remaining: [[~(countdown/60) + 1]]:[[String(~(countdown%60)+1).padStart(2, '0')]]</v-card>
+            <v-carousel height="100%" :show-arrows="false" v-model="question_index" hide-delimiters progress="primary">
               <v-carousel-item
                 class="px-10"
                 v-for="q in questions"  
               >
-                <v-card class="pa-2">
-                  <template v-slot:title>[[question_index+1]]. [[q.text]]</template>
+                <v-card class="pa-2" flat>
+                  <template v-slot:title>[[question_index+1]]. <span v-html="q.text"></span></template>
 
-                  <template v-slot:text>
-                    <div min-height="600px"></div>
-                  </template>
+                  <v-card-text>
+                    <v-container>
+                      <div v-if="q.type!=='Essay'" >
+                        <v-radio-group v-if="q.type=='Single Answer'" v-model="answer_choice">
+                          <v-row class="align-center radios" v-for="choice in q.choices">
+            <!--                 <v-col cols="12"> -->
+                            <v-radio v-else :value="choice.id" class="pe-2 inline-radio" v-model="answer_choice"></v-radio>
+                            <span
+                            >[[choice.text]]</span>
+                          </v-row>
+                        </v-radio-group>
+                        <div v-else>
+                          <v-row class="align-center" v-for="choice in q.choices">
+            <!--                 <v-col cols="12"> -->
+                              <v-checkbox-btn v-if="q.type=='Multiple Answer'" v-model="choice.is_answer" class="pe-2"></v-checkbox-btn>
+                              <span
+                            >[[choice.text]]</span>
+                          </v-row>
+                        </div>
+                      </div>
+                      <div v-else>
+                        <v-text-field></v-text-field>
+                      </div>
+                    </v-container>
+                  </v-card-text>
                   
                   <v-card-actions>
                     <v-btn icon="mdi-chevron-left" @click="prev" :disabled="question_index == 0">
                   
                     </v-btn>
                     <v-spacer v-else></v-spacer>
-                    <v-btn v-if="question_index==this.questions.length-1">Submit</v-btn>
+                    <v-dialog
+                      v-model="finish_prompt"
+                      persistent v-if="question_index==this.questions.length-1"
+                    >
+                      <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props">Submit</v-btn>
+                      </template>
+                      <v-card>
+                        <v-card-title>Submit?</v-card-title>
+                        <v-card-text>
+                          Are you sure you want to submit? You may want to go back through and check your answers.
+                        </v-card-text>
+                        <v-card-actions class="justify-end">
+                          <v-btn @click="finish">Submit <v-progress-circular indeterminate color="green" v-if="finish_loading"></v-progress-circular></v-btn>
+                          <v-btn @click="finish_prompt = false">Cancel</v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
                     <v-btn v-else icon="mdi-chevron-right" @click="next" :disabled="question_index == this.questions.length-1">
                   
                     </v-btn>
                   </v-card-actions>
                 </v-card>
+                <v-spacer></v-spacer>
               </v-carousel-item>
               <template v-slot:next="{ props }">
                 <v-btn icon="mdi-chevron-right" @click="next" :disabled="question_index == this.questions.length-1">
@@ -44,6 +89,7 @@
               </template>
             </v-carousel>
           </div>
+          <!-- <v-progress-linear color="primary" :model-value="question_index/questions.length * 100"></v-progress-linear> -->
         </v-main>
       </v-app>
     </div>
@@ -56,18 +102,24 @@
     const app = createApp({
       data() {
         return {
+          finish_prompt: false,
+          finish_loading: false,
           question_index: 0,
           exam: {{exam|tojson}},
           user: {{user|tojson}},
-          take: {{ "'"+str(take.id)+"'" if take else 'false' }},
+          take: {{ take|tojson if take else 'false' }},
           questions: [
-          ]
+          ],
+          now: Date.now()/1000
         }
       },
       computed: {
         can_take() {
           return this.user.exams[this.exam.id].can_take
-        }  
+        },
+        countdown() {
+          return  this.now - this.take.over_at
+        }
       },
       methods: {
         next() {
@@ -83,17 +135,42 @@
           this.load_question(Math.max(ni-1, 0))
         },
         async load_question(i) {
+          // i += 1
           if (this.questions[i].not_loaded) {
             resp = await fetch('/question/' + this.exam.id + '/' + i)
+            if (resp.status == 403) {
+              this.question_index = 0
+              window.location.replace('/prep_area/' + this.exam.id)
+            }
             res = await resp.json()
-            this.questions[i] = res
+            if (res == null) { // not sure why this ever is the case, but it is
+              await this.load_question(i)
+            } else {
+              this.questions[i] = res
+            }
           }
-        }
+        },
+        async finish() {
+          this.finish_loading = true
+          resp = await fetch('/take/' + this.exam.id + '/finish', {
+            method: "POST"
+          })
+          this.question_index = 0
+          window.location.replace('/prep_area/' + this.exam.id)
+        },
+        async check_timer() {
+          this.now = Date.now()/1000
+          if (this.now > this.take.over_at) {
+            clearInterval(this.timer)
+            await this.finish()
+          }
+        },
       },
       async mounted() {
+        // load questions / fill with stubs
         let qs = 0
         for(let qbid in this.exam.structure) {
-          qs += this.exam.structure[qbid].amt
+          qs += parseInt(this.exam.structure[qbid].amt)
         }
         for (let i=0; i<qs; i++) {
           this.questions.push({
@@ -103,8 +180,28 @@
             not_loaded: true
           })
         }
-        await this.load_question(0)
-        await this.load_question(1)
+        if (localStorage.question_index) {
+          this.question_index = parseInt(localStorage.question_index)
+        }
+        await this.load_question(this.question_index)
+        await this.load_question(Math.min(this.question_index+1, this.questions.length-1))
+
+        // set take
+        if (!this.take) {
+          this.take = {
+            exam: this.exam.id,
+            over_at: Date.now()/1000 + this.exam.time_alotted*60,
+            progress: {}
+          }
+        }
+        
+        // set timer
+        this.timer = setInterval(this.check_timer.bind(this), 1000)
+      },
+      watch: {
+        question_index(qi) {
+          localStorage.question_index = qi;
+        }
       },
       delimiters: ['[[',']]']
     })

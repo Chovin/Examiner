@@ -264,7 +264,7 @@ def take_exam(eid):
 
   take = Take.last_take(current_user, exam)
 
-  return render_template('take_exam.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take)
+  return render_template('take_exam.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take.to_dict() if take and take.status != 'finished' else None)
 
 @app.route('/user/<uid>/<int:eid>/<action>', methods=['POST'])
 @login_required
@@ -302,18 +302,21 @@ def assign_exam(uid, eid, action):
 def get_or_create_next_unfinished_take(user, exam):
   last_take = Take.last_take(user, exam)
   if last_take is None or last_take.status == "finished":
-    n = (last_take.number + 1) if last_take else 1
+    n = (int(last_take.number) + 1) if last_take else 1
     last_take = Take.create(n, exam, user)
   return last_take
 
 @app.route('/question/<int:eid>/<int:i>', methods=['GET'])
 @login_required
 def get_question(eid, i):
+  print('get_question', eid, i)
   exam = Exam.get(eid)
   if exam is None:
     abort(404)
   if not current_user.can_take(eid):
     abort(403)
+  if i < 0:
+    return jsonify(None)
 
   take = get_or_create_next_unfinished_take(current_user, exam)
   if take.status == "not started":
@@ -321,21 +324,22 @@ def get_question(eid, i):
   if take.can_get_question():
     return jsonify(take.get_question(i))
   else:
-    current_user.finish_take(exam.id)
+    # current_user.finish_take(exam.id)
     take.finish()
     return jsonify(False)
 
-@app.route('/take/<int:eid>/<int:ti>', methods=['GET'])
+@app.route('/take/<int:eid>/finish', methods=['POST'])
 @login_required
-def finish_take(eid, ti):
+def finish_take(eid):
   exam = Exam.get(eid)
   if exam is None:
     abort(404)
   if not current_user.can_take(eid):
     abort(403)
-
-  take = Take.get(Take.get_id(ti, exam, current_user))
+  take = Take.last_take(current_user, exam)
   take.finish()
+
+  return take.to_dict()
   
 
 @app.route('/exam/list', methods=['GET'])

@@ -10,6 +10,7 @@
             <v-card width="400">
               <template v-slot:title>[[ exam.name ]]</template>
               <template v-slot:text>
+                <div>Number of questions:<b>[[ n_qs ]]</b></div>
                 <div>Minutes to complete: <b>[[ exam.time_alotted ]]</b></div>
                 <div><b>
                 [[ exam.is_open ? "can start" : "can't start yet" ]]
@@ -47,15 +48,22 @@
         return {
           exam: {{exam|tojson}},
           user: {{user|tojson}},
-          take: {{ take.id if take else 'false' }},
+          take: {{ take.id|tojson if take else 'false' }},
           loading: false,
-          timer: null
+          timer: null,
         }
       },
       computed: {
         can_take() {
           return this.user.exams[this.exam.id].can_take
-        }  
+        },
+        n_qs() {
+          let qs = 0
+          for(let qbid in this.exam.structure) {
+            qs += parseInt(this.exam.structure[qbid].amt)
+          }
+          return qs
+        }
       },
       methods: {
         start() {

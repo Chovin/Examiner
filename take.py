@@ -64,13 +64,18 @@ class Take():
 
   @staticmethod
   def last_take(user, exam):
-    all_takes = Take.all(user, exam)
-    if not all_takes:
+    print('last take start')
+    num = user.exams[exam.id]['current_take']
+    try:
+      take = Take.get(Take.get_id(num, exam, user))
+    except error:
+      print(error)
       return None
-    take = None
-    for take_id, take in all_takes.items():
-      take.number
-    take_id, take = max(all_takes.items(), key=lambda k: k[1].number)
+    # all_takes = Take.all(user, exam)
+    # if not all_takes:
+    #   return None
+    # take_id, take = max(all_takes.items(), key=lambda k: int(k[1].number))
+    print('last take', num)
     return take
 
   @staticmethod
@@ -104,6 +109,9 @@ class Take():
   def finish(self):
     self.status = "finished"
     self.commit()
+    self.student.exams[self.exam.id]['can_take'] = False
+    self.student.exams[self.exam.id]['current_take'] = int(self.number) + 1
+    self.student.commit()
 
   def is_started(self):
     """questions can be answered"""
@@ -118,39 +126,41 @@ class Take():
     return f'{self.id}_{qbid}_{qid}_{qn}'
   
   def get_question(self, i):
-    """i is 1-indexed question number"""
+    """i is 0-indexed question number"""
+    print('get question start')
     db = get_db()
-    qit = 1
+    qit = 0
     for qp in self.progress:
       if qit == i:
         return Bank.get(qp['qbid']).get_question(qp['qid'], answers_hidden=True, seed=self.get_seed(qp['qbid'], qp['qid'], qit))
       qit += 1
 
+    print('getting', i, 'qit at', qit)
+
     q = None
     # generate new progress
     for qbid, amt_pnts in self.exam.structure.items():
       bank = Bank.get(qbid)
-      for qi in range(amt_pnts['amt']):
-        print(self.progress)
+      done_qs = [p['qid'] for p in self.progress if p['qbid'] == qbid]
+      for qi in range(int(amt_pnts['amt']) - len(done_qs)):
+        print(json.dumps(json.loads(dumps(self.progress)),indent=2))
         done_qs = [p['qid'] for p in self.progress if p['qbid'] == qbid]
         print('-'*20 + 'pool')
         pool = [ qid for qid in bank.questions.keys() if qid not in done_qs and qid != 'next_id' ]
+        print(pool)
         qid = random.choice(pool)
         self.progress.append({'qbid': qbid, 'qid': qid, 'answer': []})
         seed = self.get_seed(qbid, qid, qit)
         if qit == i:
-          break
+          self.commit()
+          print(bank)
+          print(qid)
+          q = bank.get_question(qid, answers_hidden=True, seed=seed)
+          print('-question-',q)
+          return q
         qit += 1
-      if qit == i:
-        break
         
-    self.commit()
-    return bank.get_question(qid, answers_hidden=True, seed=seed)
-    
-  # do I really need to seed it
-  # does it need to be deterministic?
-  # def get_seed(self, question_n):
-  #   return f'{self.id}_{question_n}'
+    return None
 
   def to_dict(self):
     return {
@@ -167,4 +177,3 @@ class Take():
     db = get_db()
     print(self.to_dict())
     db[self.id] = self.to_dict()
-    print('here')
