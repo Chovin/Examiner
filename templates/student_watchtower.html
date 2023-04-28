@@ -24,7 +24,7 @@
             :headers="headers"
             :items="users_table_list"
           >
-            <template v-slot:item.student="{ item }">
+            <template v-slot:item.student="{ item, index }">
               <v-avatar>
                 <v-img :src="item.raw.student.profile_pic" :alt="item.raw.student.name"></v-img>
               </v-avatar>
@@ -32,6 +32,9 @@
             </template>
             <template v-slot:item.can_take="{ item }">
               <v-checkbox v-model="item.value.can_take" @click="toggle_can_take(item.raw.student)"></v-checkbox>
+            </template>
+            <template v-slot:item.highest_score="{ item }">
+              [[ percentage(new_users[item.raw.student.id], new_exams[selected_exam]) ]]
             </template>
           </v-data-table>
         </v-main>
@@ -65,10 +68,12 @@
             headers: [
               {title:'Student', key:'student'},
               // {title:"Exams", key:'exams'}, 
-              {title:"Best Grade", key:'best_grade'},
+              {title:"Best Grade", key:'highest_score'},
               {title:'Current Take', key:'current_take'},
               {title:"Can Take/Retake", key:'can_take'},
             ],
+            new_users: {{users|tojson}}, // don't look
+            new_exams: {{exams|tojson}},
             users: [{%- for uid, u in users.items() %}
               {
                id: "{{uid}}", 
@@ -78,7 +83,8 @@
                  {%- for eid, e in u.exams.items() %}
                  "{{eid}}": { 
                   can_take: {{"true" if e.can_take else "false" }},
-                  current_take: {{ e.current_take }}
+                  current_take: {{ e.current_take }},
+                  highest_score: {{ e.highest_score if e.highest_score is defined else ''|tojson }}
                  },
                  {%- endfor %}
                }
@@ -158,7 +164,22 @@
             if (exam != null) {
               student.exams[eid] = exam
             }
-          }
+          },
+          total_score(exam) {
+            let pnts = 0
+            for(let qbid in exam.structure) {
+              pnts += parseInt(exam.structure[qbid].amt) * parseInt(exam.structure[qbid].points)
+            }
+            return pnts
+          },
+          percentage(user, exam) {
+            console.log(user, this.new_users)
+            ex = user.exams[exam.id]
+            if (ex == undefined) {
+              return null
+            }
+            return ~~(ex.highest_score / this.total_score(exam) * 100)
+          },
         },
         delimiters: ['[[',']]']
       })
