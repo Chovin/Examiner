@@ -148,7 +148,7 @@
           await this.send_answer(i)
         },
         async send_answer(i) {
-          console.log(this.take.progress[i].answer)
+          // console.log(this.take.progress[i].answer)
           try {
             resp = await fetch('/take/' + this.exam.id + '/progress', {
               method: 'PUT',

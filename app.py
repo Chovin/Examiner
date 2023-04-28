@@ -189,12 +189,12 @@ def new_exam():
     abort(403)
   eid = request.args.get('eid')
   exam = Exam.get(eid)
-  print(eid)
-  print(exam)
+  # print(eid)
+  # print(exam)
   structure = {}
   if exam:
     structure = json.loads(dumps(exam.structure))
-  print(structure)
+  # print(structure)
   banks = Bank.all(as_dicts=False)
   banks = {bid: bank for bid, bank in banks.items() if current_user.id == bank.author.id}
   
@@ -223,7 +223,7 @@ def student_watchtower():
   ex = Exam.all(as_dicts=True)
   exams = {eid: ex[eid] for eid in ex.keys() if ex[eid]['author_id'] == current_user.id}
   users = User.all(as_dicts=True)
-  print(users)
+  # print(users)
   return render_template('student_watchtower.html', exams=exams, users=users)
 
 @app.route('/assigned', methods=['GET'])
@@ -323,7 +323,7 @@ def get_or_create_next_unfinished_take(user, exam):
 @app.route('/question/<int:eid>/<int:i>', methods=['GET'])
 @login_required
 def get_question(eid, i):
-  print('get_question', eid, i)
+  # print('get_question', eid, i)
   exam = Exam.get(eid)
   if exam is None:
     abort(404)
@@ -433,7 +433,7 @@ def update_exam(eid):
   exam.time_alotted = int(request.json['time'])
   exam.is_open = request.json['is_open']
   exam.structure = request.json['structure']
-  print(exam.structure)
+  # print(exam.structure)
   exam.commit()
   return jsonify(exam.to_dict())
 
@@ -573,7 +573,7 @@ def update_question(qbid, qid):
     request.json['type'],
     request.json['choices']
   )
-  print(request.json['choices'])
+  # print(request.json['choices'])
   q = bank.get_question(qid)
   return jsonify(q)
 

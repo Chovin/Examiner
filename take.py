@@ -47,7 +47,7 @@ class Take():
   def get(take_id):
     db = get_db()
     take = db.get(take_id)
-    print(take_id, take)
+    # print(take_id, take)
     _, uid, exid, taken = take_id.split('_')
     
     if not take:
@@ -65,7 +65,7 @@ class Take():
 
   @staticmethod
   def last_take(user, exam):
-    print('last take start')
+    # print('last take start')
     num = user.exams[exam.id]['current_take']
     take = Take.get(Take.get_id(num, exam, user))
     if take is None:
@@ -77,7 +77,7 @@ class Take():
     # if not all_takes:
     #   return None
     # take_id, take = max(all_takes.items(), key=lambda k: int(k[1].number))
-    print('last take', num)
+    # print('last take', num)
     return take
 
   @staticmethod
@@ -147,7 +147,7 @@ class Take():
   
   def get_question(self, i, answers_hidden=True):
     """i is 0-indexed question number"""
-    print('get question start')
+    # print('get question start')
     db = get_db()
     qit = 0
     for qp in self.progress:
@@ -155,7 +155,7 @@ class Take():
         return Bank.get(qp['qbid']).get_question(qp['qid'], answers_hidden=answers_hidden, seed=self.get_seed(qp['qbid'], qp['qid'], qit))
       qit += 1
 
-    print('getting', i, 'qit at', qit)
+    # print('getting', i, 'qit at', qit)
 
     q = None
     # generate new progress
@@ -163,20 +163,20 @@ class Take():
       bank = Bank.get(qbid)
       done_qs = [p['qid'] for p in self.progress if p['qbid'] == qbid]
       for qi in range(int(amt_pnts['amt']) - len(done_qs)):
-        print(json.dumps(json.loads(dumps(self.progress)),indent=2))
+        # print(json.dumps(json.loads(dumps(self.progress)),indent=2))
         done_qs = [p['qid'] for p in self.progress if p['qbid'] == qbid]
-        print('-'*20 + 'pool')
+        # print('-'*20 + 'pool')
         pool = [ qid for qid in bank.questions.keys() if qid not in done_qs and qid != 'next_id' ]
-        print(pool)
+        # print(pool)
         qid = random.choice(pool)
         self.progress.append({'qbid': qbid, 'qid': qid, 'answer': []})
         seed = self.get_seed(qbid, qid, qit)
         if qit == i:
           self.commit()
           # print(bank)
-          print(qid)
+          # print(qid)
           q = bank.get_question(qid, answers_hidden=answers_hidden, seed=seed)
-          print('-question-',q)
+          # print('-question-',q)
           return q
         qit += 1
         
@@ -199,5 +199,5 @@ class Take():
     
   def commit(self):
     db = get_db()
-    print(self.to_dict())
+    # print(self.to_dict())
     db[self.id] = self.to_dict()
