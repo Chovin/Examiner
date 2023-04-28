@@ -204,7 +204,7 @@
           qs += parseInt(this.exam.structure[qbid].amt)
         }
         if (!this.take) {
-          this.take = {progress: []}
+          this.take = {progress: [], over_at: Date.now()/1000 + this.exam.time_alotted * 60}
         }
         for (let i=0; i<qs; i++) {
           this.questions.push({

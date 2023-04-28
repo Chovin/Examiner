@@ -248,7 +248,7 @@ def prep_exam(eid):
 
   take = Take.last_take(current_user, exam)
 
-  return render_template('prep_area.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take, can_see_prev=take.is_finished())
+  return render_template('prep_area.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take, can_see_prev=take and take.is_finished())
 
 @app.route('/take_exam/<int:eid>')
 @login_required
