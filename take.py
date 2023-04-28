@@ -136,20 +136,23 @@ class Take():
       return False
     return True
 
+  def is_finished(self):
+    return self.status == 'finished' or self.is_ended()
+  
   def is_ended(self):
     return datetime.now().timestamp() > self.over_at
 
   def get_seed(self, qbid, qid, qn):
     return f'{self.id}_{qbid}_{qid}_{qn}'
   
-  def get_question(self, i):
+  def get_question(self, i, answers_hidden=True):
     """i is 0-indexed question number"""
     print('get question start')
     db = get_db()
     qit = 0
     for qp in self.progress:
       if qit == i:
-        return Bank.get(qp['qbid']).get_question(qp['qid'], answers_hidden=True, seed=self.get_seed(qp['qbid'], qp['qid'], qit))
+        return Bank.get(qp['qbid']).get_question(qp['qid'], answers_hidden=answers_hidden, seed=self.get_seed(qp['qbid'], qp['qid'], qit))
       qit += 1
 
     print('getting', i, 'qit at', qit)
@@ -172,7 +175,7 @@ class Take():
           self.commit()
           # print(bank)
           print(qid)
-          q = bank.get_question(qid, answers_hidden=True, seed=seed)
+          q = bank.get_question(qid, answers_hidden=answers_hidden, seed=seed)
           print('-question-',q)
           return q
         qit += 1

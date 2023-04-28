@@ -231,11 +231,8 @@ def student_watchtower():
 def assigned():
   ex = Exam.all(as_dicts=True)
   exams = {i:e for i, e in ex.items() if i in current_user.exams}
-  takes = {eid: Take.all(current_user, Exam.get(eid))
-    for eid in exams
-  }
 
-  return render_template('assigned.html', exams=exams, takes=takes, user=current_user.to_dict())
+  return render_template('assigned.html', exams=exams, user=current_user.to_dict())
 
 @app.route('/prep_area/<int:eid>')
 @login_required
@@ -251,7 +248,7 @@ def prep_exam(eid):
 
   take = Take.last_take(current_user, exam)
 
-  return render_template('prep_area.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take)
+  return render_template('prep_area.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take, can_see_prev=take.is_finished())
 
 @app.route('/take_exam/<int:eid>')
 @login_required
@@ -265,6 +262,24 @@ def take_exam(eid):
   take = Take.last_take(current_user, exam)
 
   return render_template('take_exam.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take.to_dict() if take and take.status != 'finished' else None)
+
+@app.route('/prev_exam/<int:eid>')
+@login_required
+def prev_exam(eid):
+  exam = Exam.get(eid)
+  if exam is None:
+    abort(404)
+  if current_user.can_take(eid):
+    abort(403)
+  take = Take.last_take(current_user, exam)
+  if not take.is_finished():
+    abort(403)
+
+  qs = []
+  for i, p in enumerate(take.progress):
+    qs.append(take.get_question(i, answers_hidden=False))
+
+  return render_template('prev_exam.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take.to_dict(), questions=qs)
 
 @app.route('/user/<uid>/<int:eid>/<action>', methods=['POST'])
 @login_required

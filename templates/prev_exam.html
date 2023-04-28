@@ -1,0 +1,142 @@
+<html>
+  <head>
+    {% include "_includes.html" %}
+    <style>
+      .radios > .v-selection-control {
+        flex: 0 1;
+      }
+      pre {
+        font-size: 15px;
+        line-height: 1.5;
+        padding: 10px;
+        background-color: #f7f7f7;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+      }
+      .correct-choice {
+        position: absolute;
+        color: green;
+      }
+      .radios .correct-choice {
+        opacity: .75;
+      }
+      .wrong-choice {
+        background: rgba(255,0,0,.25);
+      }
+      .real-choice {
+        position: relative;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="vm">
+      <v-app>        
+        <header>{% include "_navigation.html" %}</header>
+        <v-main>
+          <v-container>
+            <v-row>
+              <h1>[[exam.name]]</h1>
+            </v-row>
+            <v-row>
+              <h3>Highest Score: [[score]]/[[total_score]] (<span :style="{color: percentage > 50? 'green':'red'}">[[percentage]]%</span>)</h3>
+            </v-row>
+            <v-row>
+              <h3>Previous Score: [[this_score]]/[[total_score]] (<span :style="{color: this_percentage > 50? 'green':'red'}">[[this_percentage]]%</span>)</h3>
+            </v-row>
+            <v-row><spacer class="pa-4"></spacer></v-row>
+            <v-row v-for="(q, i) in questions">
+              <v-card class="pa-2" flat>
+                <template v-slot:title>[[i+1]]. <span v-html="q.text"></span></template>
+    
+                <v-card-text>
+                  <v-container>
+                    <div v-if="q.type!=='Essay'" >
+                      <div v-if="q.type=='Single Answer'">
+                        <!-- <v-radio-group class="real-choice" v-if="q.type=='Single Answer'" v-model="take.progress[i].answer[0]"> -->
+                          <v-row :class="{'align-center': true, 'radios': true, 'wrong-choice': (choice.is_answer && !take.progress[i].answer.includes(choice.id))}" v-for="(choice, j) in q.choices">
+            <!--                 <v-col cols="12"> -->
+                            <v-radio disabled v-model="take.progress[i].answer[0]" :value="choice.id" class="pe-2 inline-radio"></v-radio>
+                            <v-radio disabled v-model="choice.is_answer" class="pe-2 inline-radio correct-choice" v-if="choice.is_answer"></v-radio>
+                            <span v-html="choice.text"></span>
+                          </v-row>
+                        <!-- </v-radio-group> -->
+                      </div>
+                      <div v-else>
+                        <v-row :class="{'align-center': true, 'wrong-choice': (choice.is_answer && !take.progress[i].answer.includes(choice.id)) || (!choice.is_answer && take.progress[i].answer.includes(choice.id))}" v-for="(choice, j) in q.choices">
+          <!--                 <v-col cols="12"> -->
+                            <v-checkbox-btn disabled v-model="take.progress[i].answer" :value="choice.id" class="pe-2"></v-checkbox-btn>
+                            <v-checkbox-btn disabled v-model="choice.is_answer" class="pe-2 correct-choice" v-if="choice.is_answer"></v-checkbox-btn>
+                            <span v-html="j + ' ' + choice.text"></span>
+                        </v-row>
+                      </div>
+                    </div>
+                    <div v-else>
+                      <v-text-field disabled></v-text-field>
+                    </div>
+                  </v-container>
+                </v-card-text>
+              </v-card>
+            </v-row>
+          </v-container>
+        </v-main>
+      </v-app>
+    </div>
+    <script>
+    const { createApp } = Vue
+    const { createVuetify } = Vuetify
+    
+    const vuetify = createVuetify({ iconfont: "fa" })
+    
+    const app = createApp({
+      data() {
+        return {
+          k: true,
+          exam: {{ exam|tojson }},
+          take: {{ take|tojson }},
+          questions: {{ questions|tojson }},
+          user: {{ user|tojson }},
+        }
+      },
+      computed: {
+        score() {
+          return score = this.user.exams[this.exam.id].highest_score
+        },
+        this_score() {
+          let score = 0
+          for (let i=0; i<this.take.progress.length; i++) {
+            let p = this.take.progress[i]
+            let q = this.questions[i]
+            correct_answers = q.choices.filter((c) => c.is_answer).map((c) => c.id)
+            chosen_answers = [...p.answer]
+            correct = chosen_answers.sort().join(',') == correct_answers.sort().join()
+            if (correct) {
+              worth = parseInt(this.exam.structure[p.qbid].points)
+              score += worth
+            }
+          }
+          return score
+        },
+        this_percentage() {
+          return ~~(this.this_score / this.total_score * 100)
+        },
+        total_score() {
+          let pnts = 0
+          for(let qbid in this.exam.structure) {
+            pnts += parseInt(this.exam.structure[qbid].amt) * parseInt(this.exam.structure[qbid].points)
+          }
+          return pnts
+        },
+        percentage() {
+          return ~~(this.score / this.total_score * 100)
+        }
+      },
+      methods: {
+      },
+      delimiters: ['[[',']]']
+    })
+    app.use(vuetify).mount('#vm')
+    </script>
+  </body>
+</html>

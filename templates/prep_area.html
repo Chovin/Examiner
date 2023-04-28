@@ -1,6 +1,7 @@
 <html>
   <head>
     {% include "_includes.html" %}
+  </head>
   <body>
     <div id="vm">
       <v-app>        
@@ -11,7 +12,7 @@
               <template v-slot:title>[[ exam.name ]]</template>
               <template v-slot:text>
                 <div v-if="score!=null">Score: <b>[[ percentage ]]%</b></div>
-                <div>Number of questions:<b>[[ n_qs ]]</b></div>
+                <div>Number of questions: <b>[[ n_qs ]]</b></div>
                 <div>Minutes to complete: <b>[[ exam.time_alotted ]]</b></div>
                 <div><b>
                 [[ exam.is_open ? "can start" : "can't start yet" ]]
@@ -30,7 +31,7 @@
                   ></v-progress-circular>
                 </v-btn>
                 <!-- TODO -->
-                <v-btn v-if="take">see prev</v-btn>
+                <v-btn v-if="take && can_see_prev" :href="'/prev_exam/' + exam.id">see prev</v-btn>
               </template>
               
             </v-card>
@@ -52,6 +53,7 @@
           take: {{ take.id|tojson if take else 'false' }},
           loading: false,
           timer: null,
+          can_see_prev: {{ can_see_prev|tojson }}
         }
       },
       computed: {

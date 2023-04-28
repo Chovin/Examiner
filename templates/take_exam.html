@@ -16,6 +16,7 @@
         white-space: pre-wrap;
       }
     </style>
+  </head>
   <body>
     <div id="vm">
       <v-app>        
@@ -38,16 +39,14 @@
                           <v-row class="align-center radios" v-for="choice in q.choices">
             <!--                 <v-col cols="12"> -->
                             <v-radio v-else :value="choice.id" class="pe-2 inline-radio" @click="radio_select(i, choice.id)"></v-radio>
-                            <span
-                            >[[choice.text]]</span>
+                            <span v-html="choice.text"></span>
                           </v-row>
                         </v-radio-group>
                         <div v-else>
                           <v-row class="align-center" v-for="choice in q.choices">
             <!--                 <v-col cols="12"> -->
                               <v-checkbox-btn v-if="q.type=='Multiple Answer'" v-model="take.progress[i].answer" :value="choice.id" class="pe-2" @change="send_answer(i)"></v-checkbox-btn>
-                              <span
-                            >[[choice.text]]</span>
+                              <span v-html="choice.text"></span>
                           </v-row>
                         </div>
                       </div>
