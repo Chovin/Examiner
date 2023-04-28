@@ -68,7 +68,7 @@
           <!--                 <v-col cols="12"> -->
                             <v-checkbox-btn disabled v-model="take.progress[i].answer" :value="choice.id" class="pe-2"></v-checkbox-btn>
                             <v-checkbox-btn disabled v-model="choice.is_answer" class="pe-2 correct-choice" v-if="choice.is_answer"></v-checkbox-btn>
-                            <span v-html="j + ' ' + choice.text"></span>
+                            <span v-html="choice.text"></span>
                         </v-row>
                       </div>
                     </div>

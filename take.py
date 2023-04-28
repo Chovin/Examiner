@@ -116,7 +116,7 @@ class Take():
         bank = Bank.get(p['qbid'])
       q = bank.get_question(p['qid'])
       answers = set(int(c['id']) for c in q['choices'] if c['is_answer'])
-      if set(p['answer']):
+      if set(p['answer']) == answers:
         score += int(self.exam.structure[bank.id]['points'])
     self.score = score
     
