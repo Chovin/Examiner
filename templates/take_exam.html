@@ -30,7 +30,7 @@
                 v-for="(q, i) in questions"  
               >
                 <v-card class="pa-2" flat>
-                  <template v-slot:title>[[question_index+1]]. <span v-html="q.text"></span></template>
+                  <template v-slot:title>[[question_index+1]]. <span class="text-wrap" v-html="q.text"></span></template>
 
                   <v-card-text>
                     <v-container>
@@ -149,19 +149,23 @@
         },
         async send_answer(i) {
           console.log(this.take.progress[i].answer)
-          resp = await fetch('/take/' + this.exam.id + '/progress', {
-            method: 'PUT',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              i: i,
-              answers: this.take.progress[i].answer
+          try {
+            resp = await fetch('/take/' + this.exam.id + '/progress', {
+              method: 'PUT',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                i: i,
+                answers: this.take.progress[i].answer
+              })
             })
-          })
-          if (resp.status == 403) {
-            await this.finish()
+            if (resp.status == 403) {
+              await this.finish()
+            }
+          } catch (error) {
+            await this.send_answer(i)
           }
         },
         async load_question(i) {
@@ -169,8 +173,7 @@
           if (this.questions[i].not_loaded) {
             resp = await fetch('/question/' + this.exam.id + '/' + i)
             if (resp.status == 403) {
-              this.question_index = 0
-              window.location.replace('/prep_area/' + this.exam.id)
+              this.finish()
             }
             res = await resp.json()
             if (res == null) { // not sure why this ever is the case, but it is
@@ -183,6 +186,22 @@
         },
         async finish() {
           this.finish_loading = true
+          // bulk send answers in case some didn't make it
+          let answers = []
+          for (let p of this.take.progress) {
+            answers.push(p.answer)
+          }
+          resp = await fetch('/take/' + this.exam.id + '/progress', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              answers: answers
+            })
+          })
+
           resp = await fetch('/take/' + this.exam.id + '/finish', {
             method: "POST"
           })

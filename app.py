@@ -247,8 +247,7 @@ def prep_exam(eid):
     abort(403)
 
   take = Take.last_take(current_user, exam)
-
-  return render_template('prep_area.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take, can_see_prev=take and not take.is_finished())
+  return render_template('prep_area.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take)
 
 @app.route('/take_exam/<int:eid>')
 @login_required
@@ -361,6 +360,24 @@ def update_take_progress(eid):
   answers = request.json['answers']
   take.update_progress(qi, answers)
   return jsonify(True)
+
+@app.route('/take/<int:eid>/progress', methods=['POST'])
+@login_required
+def post_take_progress(eid):
+  if not request.json or not request.json['answers']:
+    abort(400)
+  exam = Exam.get(eid)
+  if exam is None:
+    abort(404)
+  if not current_user.can_take(eid):
+    abort(403)
+  take = Take.last_take(current_user, exam)
+  if take.is_ended():
+    abort(403)
+  answers = request.json['answers']
+
+  for i, ans in enumerate(answers):
+    take.update_progress(i, ans)
 
 @app.route('/take/<int:eid>/finish', methods=['POST'])
 @login_required

@@ -31,7 +31,14 @@
                   ></v-progress-circular>
                 </v-btn>
                 <!-- TODO -->
-                <v-btn v-if="take && can_see_prev" :href="'/prev_exam/' + exam.id">see prev</v-btn>
+                <v-btn v-if="take && !can_take" :href="'/prev_exam/' + exam.id" @click="prev_loading=true">see prev
+                  <v-progress-circular
+                    indeterminate
+                    color="primary"
+                    v-if="prev_loading"
+                    size="25"
+                  ></v-progress-circular>
+                </v-btn>
               </template>
               
             </v-card>
@@ -52,8 +59,8 @@
           user: {{user|tojson}},
           take: {{ take.id|tojson if take else 'false' }},
           loading: false,
+          prev_loading: false,
           timer: null,
-          can_see_prev: {{ can_see_prev|tojson }}
         }
       },
       computed: {

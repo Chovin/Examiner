@@ -8,4 +8,6 @@ Amt/Points text-fields not pushing changes
 support essay questions
 remove all the prints and console.logs
 support multiline choices
-check that long questions allow scrollable overflow
+
+localstorage question answers instead
+some questions repeat

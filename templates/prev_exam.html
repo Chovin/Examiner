@@ -48,7 +48,7 @@
             <v-row><spacer class="pa-4"></spacer></v-row>
             <v-row v-for="(q, i) in questions">
               <v-card class="pa-2" flat>
-                <template v-slot:title>[[i+1]]. <span v-html="q.text"></span></template>
+                <template v-slot:title>[[i+1]]. <span class="text-wrap" v-html="q.text"></span></template>
     
                 <v-card-text>
                   <v-container>
