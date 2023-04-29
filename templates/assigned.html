@@ -64,7 +64,9 @@
             if (score != undefined) {
               data.best_score = ~~(score / this.total_score(this.exams[eid]) * 100) + "%"
             }
-            lst.push(data)
+            if (this.exams[eid]) {
+              lst.push(data)
+            }
           }
           return lst
         }
