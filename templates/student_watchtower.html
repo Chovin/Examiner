@@ -36,6 +36,10 @@
             <template v-slot:item.highest_score="{ item }">
               [[ percentage(new_users[item.raw.student.id], new_exams[selected_exam]) ]]
             </template>
+            <template v-slot:item.comment="{ item }" class="text-right">
+              <v-text-field v-model="comments[item.raw.student.id][selected_exam].text" @keyup.enter="save_comments(item.raw.student.id, selected_exam)" v-if="comments[item.raw.student.id][selected_exam].editing"></v-text-field>
+              <span v-if="!comments[item.raw.student.id][selected_exam].editing">[[ comments[item.raw.student.id][selected_exam].text ]] </span><v-icon @click="comments[item.raw.student.id][selected_exam].editing=true" v-if="!comments[item.raw.student.id][selected_exam].editing" flat icon="mdi-pencil"></v-icon>
+            </template>
           </v-data-table>
         </v-main>
       </v-app>
@@ -71,9 +75,12 @@
               {title:"Best Grade", key:'highest_score'},
               {title:'Current Take', key:'current_take'},
               {title:"Can Take/Retake", key:'can_take'},
+              {title:"Comments", key:'comment', align: "end"},
             ],
             new_users: {{users|tojson}}, // don't look
             new_exams: {{exams|tojson}},
+            comments: {},
+            
             users: [{%- for uid, u in users.items() %}
               {
                id: "{{uid}}", 
@@ -87,7 +94,8 @@
                   highest_score: {{ e.highest_score if e.highest_score is defined else ''|tojson }}
                  },
                  {%- endfor %}
-               }
+               },
+               timer: null
               },
             {% endfor -%}],
             exams: exams
@@ -180,6 +188,29 @@
             }
             return ~~(ex.highest_score / this.total_score(exam) * 100)
           },
+          save_comments(uid, eid) {
+            this.comments[uid][eid].editing = false
+            localStorage.comments = JSON.stringify(this.comments)
+            
+          }
+        },
+        created() {
+          // load comments
+          lc = localStorage.comments
+          if (lc) {
+            this.comments = JSON.parse(lc)
+          }
+          for (let uid in this.new_users) {
+            if (!this.comments[uid]) {
+              this.comments[uid] = {}
+            }
+            se = this.selected_exam
+            if (!this.comments[uid][se]) {
+              this.comments[uid][se] = {text: "", editing: false}
+            }
+          }
+
+          this.timer = setInterval(this.refresh_users.bind(this),1000*30)
         },
         delimiters: ['[[',']]']
       })
