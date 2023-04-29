@@ -23,22 +23,24 @@
           <v-data-table
             :headers="headers"
             :items="users_table_list"
+            :custom-sort="custom_sort"
           >
             <template v-slot:item.student="{ item, index }">
               <v-avatar>
-                <v-img :src="item.raw.student.profile_pic" :alt="item.raw.student.name"></v-img>
+                <v-img :src="item.raw.user.profile_pic" :alt="item.raw.user.name"></v-img>
               </v-avatar>
-              <strong class="avatar-name" v-html="item.raw.student.name"></strong>
+              <strong class="avatar-name" v-html="item.raw.student" ></strong>
             </template>
             <template v-slot:item.can_take="{ item }">
-              <v-checkbox v-model="item.value.can_take" @click="toggle_can_take(item.raw.student)"></v-checkbox>
+              <v-checkbox v-model="item.value.can_take" @click="toggle_can_take(item.raw.user)"></v-checkbox>
             </template>
-            <template v-slot:item.highest_score="{ item }">
-              [[ percentage(new_users[item.raw.student.id], new_exams[selected_exam]) ]]
-            </template>
+            
+            <!-- <template v-slot:item.highest_score="{ item }">
+              [[ percentage(new_users[item.raw.user.id], new_exams[selected_exam]) ]]
+            </template> -->
             <template v-slot:item.comment="{ item }" class="text-right">
-              <v-text-field v-model="comments[item.raw.student.id][selected_exam].text" @keyup.enter="save_comments(item.raw.student.id, selected_exam)" v-if="comments[item.raw.student.id][selected_exam].editing"></v-text-field>
-              <span v-if="!comments[item.raw.student.id][selected_exam].editing">[[ comments[item.raw.student.id][selected_exam].text ]] </span><v-icon @click="comments[item.raw.student.id][selected_exam].editing=true" v-if="!comments[item.raw.student.id][selected_exam].editing" flat icon="mdi-pencil"></v-icon>
+              <v-text-field v-model="comments[item.raw.user.id][selected_exam].text" @keyup.enter="save_comments(item.raw.user.id, selected_exam)" v-if="comments[item.raw.user.id][selected_exam].editing"></v-text-field>
+              <span v-if="!comments[item.raw.user.id][selected_exam].editing">[[ comments[item.raw.user.id][selected_exam].text ]] </span><v-icon @click="comments[item.raw.user.id][selected_exam].editing=true" v-if="!comments[item.raw.user.id][selected_exam].editing" flat icon="mdi-pencil"></v-icon>
             </template>
           </v-data-table>
         </v-main>
@@ -75,29 +77,13 @@
               {title:"Best Grade", key:'highest_score'},
               {title:'Current Take', key:'current_take'},
               {title:"Can Take/Retake", key:'can_take'},
-              {title:"Comments", key:'comment', align: "end"},
+              {title:"Comments", key:'comment', align: "end", sortable: false},
             ],
             new_users: {{users|tojson}}, // don't look
             new_exams: {{exams|tojson}},
             comments: {},
-            
-            users: [{%- for uid, u in users.items() %}
-              {
-               id: "{{uid}}", 
-               name: "{{u.name}}",
-               profile_pic: "{{u.profile_pic}}",
-               exams: {
-                 {%- for eid, e in u.exams.items() %}
-                 "{{eid}}": { 
-                  can_take: {{"true" if e.can_take else "false" }},
-                  current_take: {{ e.current_take }},
-                  highest_score: {{ e.highest_score if e.highest_score is defined else ''|tojson }}
-                 },
-                 {%- endfor %}
-               },
-               timer: null
-              },
-            {% endfor -%}],
+            timer: null,
+            users: [],
             exams: exams
           }
         },
@@ -113,9 +99,16 @@
           users_table_list: {
             get() {
               let tbl = []
-              for (let u of this.users) {
-                exam = u.exams[this.selected_exam] ?? {current_take: 'not assigned', can_take: false}
-                cell = {student: u, current_take: exam.current_take , can_take: exam.can_take}
+              for (let uid in this.new_users) {
+                u = this.new_users[uid]
+                exam = u.exams[this.selected_exam] ?? {current_take: '', can_take: false}
+                cell = {
+                  student: u.name,
+                  user: u, 
+                  highest_score: this.percentage(this.new_users[uid], this.new_exams[this.selected_exam]) || '',
+                  current_take: exam.current_take, 
+                  can_take: exam.can_take
+                }
                 if (exam.best_grade != undefined) {
                   cell.best_grade = exam.best_grade
                 }
@@ -192,6 +185,20 @@
             this.comments[uid][eid].editing = false
             localStorage.comments = JSON.stringify(this.comments)
             
+          },
+          load_comments() {
+            
+          },
+          custom_sort(items, index, isDesc) {
+            items.sort((a,b) => {
+              if (index[0] == 'student') {
+                if (!isDesc[0]) {
+                  return a[index].localeCompare(b[index])
+                } else {
+                  return b[index].localeCompare(a[index])
+                }
+              }
+            })
           }
         },
         created() {
@@ -204,13 +211,14 @@
             if (!this.comments[uid]) {
               this.comments[uid] = {}
             }
-            se = this.selected_exam
-            if (!this.comments[uid][se]) {
-              this.comments[uid][se] = {text: "", editing: false}
+            for (let se in this.exams) {
+              if (!this.comments[uid][se]) {
+                this.comments[uid][se] = {text: "", editing: false}
+              }
             }
           }
 
-          this.timer = setInterval(this.refresh_users.bind(this),1000*30)
+          // this.timer = setInterval(this.refresh_users.bind(this),1000*30)
         },
         delimiters: ['[[',']]']
       })
