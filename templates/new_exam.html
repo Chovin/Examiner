@@ -49,7 +49,7 @@
             </tr>
             <tr class="table_row" v-for="s in struct_table" :key="s.bid">
               <td>
-                [[s.bid]] [[ s.name ]]
+                [[bank_name(s.bid)]]
               </td>
               <td>
                 <v-responsive
@@ -160,6 +160,13 @@
           }
         },
         methods: {
+          bank_name(bid) {
+            for (let b of this.banks) {
+              if (bid == b.value) {
+                return b.display
+              }
+            }
+          },
           async addBank() {
             if (this.bank == '') {
               return false
