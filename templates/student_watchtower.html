@@ -23,7 +23,6 @@
           <v-data-table
             :headers="headers"
             :items="users_table_list"
-            :custom-sort="custom_sort"
           >
             <template v-slot:item.student="{ item, index }">
               <v-avatar>
@@ -117,7 +116,7 @@
               return tbl
             },
             set(v) {
-              console.log('trying to set', v)
+              this.new_users = v
             }
           },
           exams_list() {
@@ -187,38 +186,36 @@
             
           },
           load_comments() {
-            
-          },
-          custom_sort(items, index, isDesc) {
-            items.sort((a,b) => {
-              if (index[0] == 'student') {
-                if (!isDesc[0]) {
-                  return a[index].localeCompare(b[index])
-                } else {
-                  return b[index].localeCompare(a[index])
+            lc = localStorage.comments
+            if (lc) {
+              this.comments = JSON.parse(lc)
+            }
+            for (let uid in this.new_users) {
+              if (!this.comments[uid]) {
+                this.comments[uid] = {}
+              }
+              for (let se in this.exams) {
+                if (!this.comments[uid][se]) {
+                  this.comments[uid][se] = {text: "", editing: false}
                 }
               }
+            }
+          },
+          async refresh_users() {
+            resp = await fetch('/user', {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              }
             })
+            this.users_table_list = await resp.json()
           }
         },
         created() {
-          // load comments
-          lc = localStorage.comments
-          if (lc) {
-            this.comments = JSON.parse(lc)
-          }
-          for (let uid in this.new_users) {
-            if (!this.comments[uid]) {
-              this.comments[uid] = {}
-            }
-            for (let se in this.exams) {
-              if (!this.comments[uid][se]) {
-                this.comments[uid][se] = {text: "", editing: false}
-              }
-            }
-          }
+          this.load_comments()
 
-          // this.timer = setInterval(this.refresh_users.bind(this),1000*30)
+          this.timer = setInterval(this.refresh_users.bind(this),1000*10)
         },
         delimiters: ['[[',']]']
       })

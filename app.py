@@ -280,6 +280,14 @@ def prev_exam(eid):
 
   return render_template('prev_exam.html', exam=exam.to_dict(), user=current_user.to_dict(), take=take.to_dict(), questions=qs)
 
+@app.route('/user', methods=['GET'])
+@login_required
+def get_users():
+  if not current_user.is_teacher:
+    abort(403)
+  users = User.all(as_dicts=True)
+  return jsonify(users)
+
 @app.route('/user/<uid>/<int:eid>/<action>', methods=['POST'])
 @login_required
 def assign_exam(uid, eid, action):
