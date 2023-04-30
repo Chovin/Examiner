@@ -71,7 +71,7 @@
                       <v-card>
                         <v-card-title>Submit?</v-card-title>
                         <v-card-text>
-                          Are you sure you want to submit? You may want to go back through and check your answers.
+                          Are you sure you want to submit? You may want to go back through and check your answers. <p v-if="incomplete_questions.length > 0">You have not yet completed the following <b>[[incomplete_questions.length]]</b> questions: <b>[[incomplete_questions]]</b></p>
                         </v-card-text>
                         <v-card-actions class="justify-end">
                           <v-btn @click="finish">Submit <v-progress-circular indeterminate color="green" v-if="finish_loading"></v-progress-circular></v-btn>
@@ -128,6 +128,16 @@
         },
         countdown() {
           return  this.now - this.take.over_at
+        },
+        incomplete_questions() {
+          incompletes=[]
+          for (let i=0; i<this.take.progress.length; i++) {
+            let p = this.take.progress[i]
+            if (p.answer.length == 0) {
+              incompletes.push(i+1)
+            }
+          }
+          return incompletes
         }
       },
       methods: {
