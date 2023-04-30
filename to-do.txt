@@ -11,3 +11,9 @@ support multiline choices
 
 localstorage question answers instead
 some questions repeat
+score said 2 were wrong. only could find 1 wrong
+add admin functions like giving someone teacher
+double check that > 1 point questions work
+add csv download of grades
+adjust students grades?
+switch saving grades to percentages
