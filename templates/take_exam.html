@@ -30,7 +30,7 @@
                 v-for="(q, i) in questions"  
               >
                 <v-card class="pa-2" flat>
-                  <template v-slot:title>[[question_index+1]]. <span class="text-wrap" v-html="q.text"></span></template>
+                  <template v-slot:title>[[question_index+1]]. <span class="text-wrap" v-html="q.text"></span>[[ q.type=='Multiple Answer'? ' (multiple choice)' : '' ]]</template>
 
                   <v-card-text>
                     <v-container>
@@ -45,7 +45,7 @@
                         <div v-else>
                           <v-row class="align-center" v-for="choice in q.choices">
             <!--                 <v-col cols="12"> -->
-                              <v-checkbox-btn v-if="q.type=='Multiple Answer'" v-model="take.progress[i].answer" :value="choice.id" class="pe-2" @change="send_answer(i)"></v-checkbox-btn>
+                              <v-checkbox-btn v-if="q.type=='Multiple Answer'" v-model="take.progress[i].answer" :value="choice.id" class="pe-2" ></v-checkbox-btn>
                               <span v-html="choice.text"></span>
                           </v-row>
                         </div>
@@ -144,19 +144,25 @@
         }
       },
       methods: {
-        next() {
+        async next() {
+          qi = this.question_index
+          await this.send_answer(qi)
           ni = Math.min(this.question_index+1, this.questions.length-1)
           this.question_index = ni
           this.load_question(ni)
           this.load_question(Math.min(ni+1, this.questions.length-1))
         },
-        prev() {
+        async prev() {
+          qi = this.question_index
+          await this.send_answer(qi)
           ni = Math.max(this.question_index-1, 0)
           this.question_index = ni
           this.load_question(ni)
           this.load_question(Math.max(ni-1, 0))
         },
-        goto_question(i) {
+        async goto_question(i) {
+          qi = this.question_index
+          await this.send_answer(qi)
           this.question_index = i
           this.load_question(i)
           ni = Math.min(this.question_index+1, this.questions.length-1)
@@ -173,9 +179,12 @@
         },
         async radio_select(i, cid) {
           this.take.progress[i].answer = [cid]
-          await this.send_answer(i)
+          // await this.send_answer(i)
         },
-        async send_answer(i) {
+        async send_answer(i, save_local_progress=true) {
+          if (save_local_progress) {
+            localStorage.progress = JSON.stringify(this.take.progress)
+          }
           // console.log(this.take.progress[i].answer)
           try {
             resp = await fetch('/take/' + this.exam.id + '/progress', {
@@ -189,6 +198,7 @@
                 answers: this.take.progress[i].answer
               })
             })
+            console.log(resp.status, await resp.json())
             if (resp.status == 403) {
               await this.finish()
             }
@@ -250,8 +260,11 @@
         for(let qbid in this.exam.structure) {
           qs += parseInt(this.exam.structure[qbid].amt)
         }
+        loading_take = true
         if (!this.take) {
+          loading_take = false
           this.take = {progress: [], over_at: Date.now()/1000 + this.exam.time_alotted * 60}
+          localStorage.progress = JSON.stringify([])
         }
         for (let i=0; i<qs; i++) {
           this.questions.push({
@@ -288,6 +301,31 @@
             this.next()
           }
         })
+        
+        // double check for incorrectly marked answers
+        if (loading_take) {
+          // console.log(this.take.progress)
+          local_progress = JSON.parse(localStorage.progress)
+          for (let i=0; i<this.take.progress.length; i++) {
+            a = local_progress[i].answer
+            b = this.take.progress[i].answer
+            a.sort()
+            b.sort()
+            same = a.length == b.length
+            for (let j=0; j<a.length; j++) {
+              if (a[j] != b[j]) {
+                same = false
+                break
+              }
+            }
+            
+            if (!same) {
+              // console.log('was', this.take.progress[i].answer, 'now', local_progress[i].answer)
+              this.take.progress[i].answer = local_progress[i].answer
+              await this.send_answer(i, false)
+            }
+          }
+        }
       },
       watch: {
         question_index(qi) {
