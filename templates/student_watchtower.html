@@ -23,6 +23,7 @@
           <v-data-table
             :headers="headers"
             :items="users_table_list"
+            density="compact"
           >
             <template v-slot:item.student="{ item, index }">
               <v-avatar>
