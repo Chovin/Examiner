@@ -5,7 +5,7 @@ make sure student accounts can view the tests assigned to them AND available to 
 fix timer not starting at start of exam sometimes
 maybe deterministic choice order on seeing prev exam
 Amt/Points text-fields not pushing changes
-support essay questions
+support essay questions (will have to bind next question shortcut to something other than enter)
 remove all the prints and console.logs
 support multiline choices
 

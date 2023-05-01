@@ -97,7 +97,7 @@
                 </v-btn>
               </template>
             </v-carousel>
-            <div class="overflow-auto">
+            <div class="overflow-auto text-center">
               <v-btn v-for="(q, i) in questions" density="compact" @click="goto_question(i)" :color="get_button_color(i)">[[i+1]]</v-btn>
             </div>
           </div>
@@ -281,6 +281,13 @@
         
         // set timer
         this.timer = setInterval(this.check_timer.bind(this), 1000)
+
+        // set enter key listener
+        window.addEventListener('keyup', (e) => {
+          if (e.key == 'Enter') {
+            this.next()
+          }
+        })
       },
       watch: {
         question_index(qi) {
