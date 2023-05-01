@@ -386,6 +386,7 @@ def post_take_progress(eid):
 
   for i, ans in enumerate(answers):
     take.update_progress(i, ans)
+  return jsonify(True)
 
 @app.route('/take/<int:eid>/finish', methods=['POST'])
 @login_required
