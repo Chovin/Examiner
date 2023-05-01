@@ -11,7 +11,7 @@
             <v-card width="400">
               <template v-slot:title>[[ exam.name ]]</template>
               <template v-slot:text>
-                <div v-if="score!=null">Score: <b>[[ percentage ]]%</b></div>
+                <div v-if="score!=null">Highest score: <b>[[ percentage ]]%</b></div>
                 <div>Number of questions: <b>[[ n_qs ]]</b></div>
                 <div>Minutes to complete: <b>[[ exam.time_alotted ]]</b></div>
                 <div><b>
