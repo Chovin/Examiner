@@ -103,6 +103,7 @@ class Take():
     if self.exam.is_open and self.student.exams[self.exam.id]['can_take'] and self.status == "not started" and not self.is_ended():
       self.status = "started"
       self.over_at = (datetime.now() + timedelta(minutes=self.exam.time_alotted)).timestamp()
+      self.generate_questions()
       self.commit()
 
   def can_get_question(self):
@@ -142,12 +143,38 @@ class Take():
   def is_ended(self):
     return datetime.now().timestamp() > self.over_at
 
+  def generate_questions(self):
+    for qbid, amt_pnts in self.exam.structure.items():
+      bank = Bank.get(qbid)
+      amt = int(amt_pnts['amt'])
+      qids = random.sample([qid for qid in bank.questions.keys() if qid != 'next_id'], amt)
+      for qid in qids:
+        self.progress.append({'qbid': qbid, 'qid': qid, 'answer': [], 'choices': bank.random_choices(qid)})
+  
   def get_seed(self, qbid, qid, qn):
     return f'{self.id}_{qbid}_{qid}_{qn}'
   
   def get_question(self, i, answers_hidden=True):
     """i is 0-indexed question number"""
     # print('get question start')
+    for qp in self.progress:
+      # new method
+      if qp.get('choices') is not None:
+        return self._get_question_pre_made(i, answers_hidden=answers_hidden)
+      else:  # old method
+        return self._get_question_random_gen(i, answers_hidden=answers_hidden) 
+
+  def _get_question_pre_made(self, i, answers_hidden=True):
+    db = get_db()
+    qp = self.progress[i]
+    bank = Bank.get(qp['qbid'])
+    q = bank.get_question(qp['qid'], answers_hidden=answers_hidden)
+    if answers_hidden:
+      choice_map = {c['id']: c for c in q['choices']}
+      q['choices'] = [choice_map[cid] for cid in qp['choices']]
+    return q
+  
+  def _get_question_random_gen(self, i, answers_hidden=True):
     db = get_db()
     qit = 0
     for qp in self.progress:

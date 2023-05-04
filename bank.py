@@ -73,6 +73,14 @@ class Bank():
     db = get_db()
     db['qb_'+str(self.id)] = self.to_dict()
 
+  def random_choices(self, qid):
+    q = self.questions.get(str(qid))
+    if q is None:
+      return []
+    cs = [c['id'] for c in q['choices']]
+    random.shuffle(cs)
+    return cs
+  
   def get_question(self, qid, answers_hidden=False, seed=False):
     """if answers_hidden, the choices dict becomes a list of format [{'id': choice_id, 'text': text}, ...]
     if seed is also given, shuffles the choices after seeding random with that seed
