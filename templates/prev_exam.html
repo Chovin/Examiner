@@ -134,6 +134,21 @@
       },
       methods: {
       },
+      mounted() {
+        if (this.take.progress[0].choices) {
+          for (let i=0; i<this.questions.length; i++) {
+            q = this.questions[i]
+            p = this.take.progress[i]
+            choice_map = {}
+            for (let c of q.choices) {
+              choice_map[c.id] = c
+            }
+            for (let j=0; j<q.choices.length; j++) {
+              q.choices[j] = choice_map[p.choices[j]]
+            }
+          }
+        }    
+      },
       delimiters: ['[[',']]']
     })
     app.use(vuetify).mount('#vm')
