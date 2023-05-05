@@ -8,6 +8,19 @@
       .q-card {
         padding: 0;
       }
+      .radios > .v-selection-control {
+        flex: 0 1;
+      }
+      pre {
+        font-size: 15px;
+        line-height: 1.5;
+        padding: 10px;
+        background-color: #f7f7f7;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+      }
     </style>
   </head>
   <body>
@@ -24,7 +37,7 @@
           </v-form>
           <v-container>
             <v-row v-for="(q, i) in qs">
-            <v-card class="q-card">
+            <v-card flat class="q-card">
               <v-card-text class="q-card">
                 <v-container>
                   <v-row>
@@ -33,6 +46,14 @@
                     <v-btn @click="duplicate_q(i)">Duplicate</v-btn>
                     <v-btn @click="open_edit_q(i)">Edit</v-btn>
                     <v-btn @click="delete_q_prompt(i)">Delete</v-btn>
+                    <v-btn @click="open_preview_q(i)">Preview</v-btn>
+                      <v-dialog 
+                        v-model="previews[i]"
+                      >
+                        <v-card>
+                          {% include "_question.html" %}
+                        </v-card>
+                      </v-dialog>
                     </v-col>
                   </v-row>
                 </v-container>
@@ -131,7 +152,9 @@
           ],
           // multiple_answer
           // essay
-          choices: [{id: 0, text: '', is_answer: true}, {id: 1, text: '', is_answer: false}]
+          choices: [{id: 0, text: '', is_answer: true}, {id: 1, text: '', is_answer: false}],
+          previews: {},
+          question_index: 0
         }
       },
       computed: {
@@ -144,7 +167,16 @@
             t.push(this.questions[k])
           }
           return t
-        }
+        },
+        take() {
+          t = {
+            progress: []
+          }
+          for (let q of this.qs) {
+            t.progress.push({answer:[0]})
+          }
+          return t
+        },
       },
       methods: {
         async save() {
@@ -312,7 +344,10 @@
         },
         back() {
           history.back()
-        }
+        },
+        open_preview_q(i) {
+          this.previews[i] = true
+        },
       },
       async beforeMount() {
         const searchParams = new URLSearchParams(window.location.search)

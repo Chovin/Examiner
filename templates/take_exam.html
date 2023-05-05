@@ -30,31 +30,7 @@
                 v-for="(q, i) in questions"  
               >
                 <v-card class="pa-2" flat>
-                  <template v-slot:title>[[question_index+1]]. <span class="text-wrap" v-html="q.text"></span>[[ q.type=='Multiple Answer'? ' (multiple choice)' : '' ]]</template>
-
-                  <v-card-text>
-                    <v-container>
-                      <div v-if="q.type!=='Essay'" >
-                        <v-radio-group v-if="q.type=='Single Answer'" v-model="take.progress[i].answer[0]">
-                          <v-row class="align-center radios" v-for="choice in q.choices">
-            <!--                 <v-col cols="12"> -->
-                            <v-radio v-else :value="choice.id" class="pe-2 inline-radio" @click="radio_select(i, choice.id)"></v-radio>
-                            <span v-html="choice.text"></span>
-                          </v-row>
-                        </v-radio-group>
-                        <div v-else>
-                          <v-row class="align-center" v-for="choice in q.choices">
-            <!--                 <v-col cols="12"> -->
-                              <v-checkbox-btn v-if="q.type=='Multiple Answer'" v-model="take.progress[i].answer" :value="choice.id" class="pe-2" ></v-checkbox-btn>
-                              <span v-html="choice.text"></span>
-                          </v-row>
-                        </div>
-                      </div>
-                      <div v-else>
-                        <v-text-field></v-text-field>
-                      </div>
-                    </v-container>
-                  </v-card-text>
+                  {% include "_question.html" %}
                   
                   <v-card-actions>
                     <v-btn icon="mdi-chevron-left" @click="prev" :disabled="question_index == 0">
