@@ -108,8 +108,8 @@ class Bank():
     return q
     
   def add_question(self, text, type_, choices):
-    key = str(self.questions['next_id'])
-    self.questions['next_id'] += 1
+    key = len([k for k in self.questions.keys() if k != 'next_id'])
+    self.questions['next_id'] = key+1
     self.questions[key] = {
       'id': key,
       'text': text,
